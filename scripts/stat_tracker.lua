@@ -20,10 +20,6 @@ local function dump(o)
   end
 end
 
--- local function getCurrentTime()
---   return os.time()
--- end
-
 math.randomseed(os.time())
 local random = math.random
 local function uuid()
@@ -39,18 +35,15 @@ local function initializeStatsTable()
   --SQUAD-SPECIFIC STATS
 
   -- rift walkers
-  answer["vekPushed"] = 0
-  answer["environmentKills"] = 0
-  answer["pushDamage"] = 0
+  answer["punchDistance"] = 0 -- incomplete
 
-  -- zenith guard COMPLETE
-  answer["selfDamage"] = 0
-  answer["shields"] = 0
-  answer["beamDamage"] = 0 
+  -- zenith guard 
+  answer["selfDamage"] = 0 -- complete
+  answer["shields"] = 0 -- complete
+  answer["beamDamage"] = 0 -- complete
 
   --steel judoka
-  answer["vekPushed"] = 0
-  answer["vekSelfDamage"] = 0
+  answer["vekSelfDamage"] = 0 -- incomplete
   answer["vekSelfKills"] = 0 -- incomplete
 
   -- rusting hulks

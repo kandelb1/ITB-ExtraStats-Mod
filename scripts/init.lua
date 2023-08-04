@@ -1,5 +1,6 @@
 local function init(self)
   LOG("MOD INIT")
+  -- create our finishedGames entry in modcontent.lua, if it doesn't exist already
   sdlext.config(
     "modcontent.lua",
     function(obj)
@@ -9,22 +10,18 @@ local function init(self)
       end
     end
   )
-  require(self.scriptPath .. "statistics_screen")
+  require(self.scriptPath .. "vanilla_stats_browser")
   require(self.scriptPath .. "modded_stats_browser")
   require(self.scriptPath .. "stat_tracker")
 end
 
 local function load(self, options, version)
   LOG("MOD LOAD")
-  for i = 1, modApi.constants.VANILLA_SQUADS do
-    local squadName = modApi.squad_text[i * 2 - 1] or "N/A"
-    LOG(i .. " " .. squadName)
-  end
 end
 
 return {
-  id = "my_test_mod",
-  name = "My Test Mod!!!",
+  id = "extra_stats",
+  name = "Extra Stats",
   version = "0.1",
   dependencies = {
     modApiExt = "1.21",

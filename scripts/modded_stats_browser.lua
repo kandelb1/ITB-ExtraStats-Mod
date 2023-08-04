@@ -3,6 +3,7 @@ local squadSpecificLabels = {
   [1] = {
     ["vekPushed"] = "Vek Pushed",
     ["pushDamage"] = "Total Push Damage",
+    ["idk"] = "idk",
   },
   -- rusting hulks
   [2] = {
@@ -18,7 +19,7 @@ local squadSpecificLabels = {
   },
   -- blitzkrieg MEH ALL BORING
   [4] = {
-    ["lightningDamage"] = "Tiles Smoked",
+    ["idk"] = "idk",
     ["idk"] = "idk",
     ["idk"] = "idk",
   },
@@ -84,20 +85,7 @@ local squadSpecificLabels = {
   },
 }
 
-local function dump(o)
-  if type(o) == 'table' then
-     local s = '{ '
-     for k,v in pairs(o) do
-        if type(k) ~= 'number' then k = '"'..k..'"' end
-        s = s .. '['..k..'] = ' .. dump(v) .. ','
-     end
-     return s .. '} '
-  else
-     return tostring(o)
-  end
-end
-
--- Spritesheet x offsets for medals for each difficulty (easy, normal, hard, unfair)
+-- Medal spritesheet x offsets for # of islands secured
 local MEDAL_X_OFFSETS = {-25, -50, -75, -100}
 local MEDAL_SMALL = {W = 25, H = 34}
 local MEDAL_SURFACES = {[2] = sdlext.getSurface({path = "img/ui/hangar/victory_2.png"}),
@@ -113,8 +101,8 @@ local function showGameStatsInRightPane(statsTable, rightPane)
   local function createGeneralLabel(text, key)
     if statsTable[key] then
       local text = UiWrappedText(text .. ": " .. statsTable[key])
-      :width(1)      
-      :addTo(rightPane.statsBox.generalStats)
+        :width(1)      
+        :addTo(rightPane.statsBox.generalStats)
       text.textAlign = "center"  
     end 
   end
@@ -122,15 +110,13 @@ local function showGameStatsInRightPane(statsTable, rightPane)
   local function createSquadSpecificLabel(text, key)
     if statsTable[key] then
       local text = UiWrappedText(text .. ": " .. statsTable[key])
-      :width(1)      
-      :addTo(rightPane.statsBox.specificStats)
+        :width(1)      
+        :addTo(rightPane.statsBox.specificStats)
       text.textAlign = "center"  
     end 
   end
 
   rightPane.statsBox:detach()
-  rightPane.statsBox = nil
-  LOG("showing game stats for squad " .. statsTable.squadId)
   rightPane.statsBox = UiWeightLayout()
     :width(1):height(1)
     :orientation(false):vgap(1)
@@ -154,7 +140,7 @@ local function showGameStatsInRightPane(statsTable, rightPane)
   createGeneralLabel("Damage Dealt", "damageDealt")
   createGeneralLabel("Vek Pushed", "vekPushed")
   createGeneralLabel("Vek Blocked", "vekBlocked")
-  createGeneralLabel("Grid Damage", "gridDamage")
+  createGeneralLabel("Grid Damage Taken", "gridDamage")
   createGeneralLabel("Grid Resists", "gridResists")
   -- createGeneralLabel("Damage Taken", "damageTaken")
   -- createGeneralLabel("Self Damage", "selfDamage")    
@@ -169,12 +155,13 @@ end
 
 local function showGameHistoryWindow()
   sdlext.showDialog(function(ui, quit)
-    LOG("SHOWING PREVIOUS GAMES DIALOG")
     local maxW = 0.8 * ScreenSizeX()
     local maxH = 0.8 * ScreenSizeY()
     local frame = sdlext.buildSimpleDialog("Previous Games", {
       maxW = maxW,
       maxH = maxH,
+      compactW = true,
+      compactH = true,
     })
 
     local box = UiWeightLayout()
@@ -216,7 +203,7 @@ local function showGameHistoryWindow()
     local games = fetchGameHistory()
     local squadPalettes = sdlext.squadPalettes()
     -- since games go from oldest-newest, lets loop through backwards so the first item in the list is the most recent game
-    -- TODO: if we want to sort by other stats, then we'll have to change this (just modify fetchGameHistory)
+    -- TODO: implement sorting by other stats, like score/kills/damage
     for i = #games, 1, -1 do
       local game = games[i]
       local squadId = game["squadId"]
@@ -298,42 +285,23 @@ local function showGameHistoryWindow()
         :addTo(right)
       
       if game.victory then
-        local medal = Ui()
-        :widthpx(MEDAL_SMALL.W):heightpx(MEDAL_SMALL.H)
-        :decorate({
-          -- DecoFrame(bgColor, deco.colors.debugYellow, 2),
-          DecoAlign(MEDAL_X_OFFSETS[game.difficulty + 1], 0),
-          DecoSurface(MEDAL_SURFACES[game.islandsSecured])
-        })
-        :clip()
-        :addTo(right)
+        Ui()
+          :widthpx(MEDAL_SMALL.W):heightpx(MEDAL_SMALL.H)
+          :decorate({
+            DecoAlign(MEDAL_X_OFFSETS[game.difficulty + 1], 0),
+            DecoSurface(MEDAL_SURFACES[game.islandsSecured])
+          })
+          :clip()
+          :addTo(right)
       end    
     end
-
-    -- sdfasdfsdf
     
     frame:addTo(ui):pospx((ui.w - frame.w) / 2, (ui.h - frame.h) / 2 - 0.05 * ScreenSizeY())
   end)
 end
 
-local mainMenuButton = MainMenuButton("tiny")
-  :pospx(412, 674)
-  :caption("View Game History")
-mainMenuButton.visible = false
-mainMenuButton.onclicked = function() showGameHistoryWindow() return true end
-
-modApi.events.onUiRootCreated:subscribe(function(screen, uiRoot)
-  mainMenuButton:addTo(uiRoot)
-end)
-
-modApi.events.onMainMenuEntered:subscribe(function(screen, wasHangar, wasGame)
-  if not mainMenuButton.visible or wasGame then
-		mainMenuButton.visible = true
-		mainMenuButton.animations.slideIn:start()
-	end
-end)
-
-modApi.events.onMainMenuExited:subscribe(function(screen)
-  LOG("EXITED MAIN MENU")
-	mainMenuButton.visible = false
-end)
+sdlext.addModContent(
+  "Extra Stats Browser",
+  function() showGameHistoryWindow() end,
+  "View all previous games that have extra stats recorded."
+)
