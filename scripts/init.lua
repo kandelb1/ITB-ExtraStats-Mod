@@ -42,6 +42,7 @@ return {
     modApiExt = "1.21",
     memedit = "1.1.4",
   },
+  icon = "img/icon.png",
   metadata = metadata,
   init = init,
   load = load,
