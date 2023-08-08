@@ -10,7 +10,6 @@ local MEDAL_SURFACES = {[2] = sdlext.getSurface({path = "img/ui/hangar/victory_2
 local PILOT_PORTRAIT_SIZE = {W = 61, H = 61}
 
 local function fetchGameHistory()
-  LOG("TEST FETCH GAME HISTORY")
   local path = GetSavedataLocation() .. "profile_" .. Settings.last_profile .. "/profile.lua"
   local stats = modApi:loadIntoEnv(path).Profile.stat_tracker
   return stats
@@ -87,7 +86,7 @@ local function gameClicked(game, rightPane)
     local pilotSurface = getPilotSurface(game[pilotKey]["id"])
     local weapon1 = getWeaponSurface(game["weapons"][weaponIndices[1]])
     local weapon2 = getWeaponSurface(game["weapons"][weaponIndices[2]])
-    Ui()
+    local images = Ui()
       :sizepx(PILOT_PORTRAIT_SIZE.W, PILOT_PORTRAIT_SIZE.H)
       :decorate({        
         DecoSurface(pilotSurface),
@@ -99,6 +98,8 @@ local function gameClicked(game, rightPane)
         DecoSurface(weapon2),
       })
       :addTo(container)
+    images.ignoreMouse = true
+    
   end
 
   rightPane.otherStats:detach()
@@ -310,10 +311,8 @@ local function showStatsScreen(gameStats)
   end)
 end
 
-local gameStats = fetchGameHistory()
-
 sdlext.addModContent(
   "Vanilla Stats Browser",
-  function() showStatsScreen(gameStats) end,
+  function() showStatsScreen(fetchGameHistory()) end,
   "View all previous games, showing just vanilla stats."
 )

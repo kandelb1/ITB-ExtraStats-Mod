@@ -1,87 +1,76 @@
 local squadSpecificLabels = {
+  -- TODO: double check these indices are correct
   -- rift walkers
   [1] = {
-    ["vekPushed"] = "Vek Pushed",
-    ["pushDamage"] = "Total Push Damage",
-    ["idk"] = "idk",
-  },
-  -- rusting hulks
-  [2] = {
-    ["tilesSmoked"] = "Tiles Smoked",
-    ["attacksCancelled"] = "Attacks Cancelled",
-    ["stormDamage"] = "Total Storm Damage",
+    ["punchDistance"] = "Distance Traveled with Punch",
   },
   -- zenith guard
-  [3] = {
-    ["selfDamage"] = "Total Self Damage",
+  [2] = {
     ["shields"] = "Shields Applied",
-    ["beamDamage"] = "Total Beam Weapon Damage",
-  },
-  -- blitzkrieg MEH ALL BORING
-  [4] = {
-    ["idk"] = "idk",
-    ["idk"] = "idk",
-    ["idk"] = "idk",
+    ["beamDamage"] = "Beam Weapon Damage",
   },
   -- steel judoka
-  [5] = {
-    ["vekPushed"] = "Vek Pushed",
+  [3] = {
     ["vekSelfDamage"] = "Vek Self Damage",
     ["vekSelfKills"] = "Vek Self Kills",
+  },
+  -- rusting hulks
+  [4] = {
+    ["tilesSmoked"] = "Tiles Smoked",
+    ["attacksCancelled"] = "Attacks Cancelled",
+    ["stormDamage"] = "Storm Damage (WIP)",
+  },
+  -- blitzkrieg
+  [5] = {
+    ["lightningDamage"] = "Lightning Weapon Damage",
+    ["lightningSelfDamage"] = "Lightning Weapon Self Damage",
+    ["rocksLaunched"] = "Rocks Launched",
   },
   -- flame behemoths
   [6] = {
     ["tilesFired"] = "Tiles Set on Fire",
     ["unitsFired"] = "Units Set on Fire",
-    ["fireDamage"] = "Fire Damage",
+    ["fireDamage"] = "Fire Damage (WIP)",
   },
   -- frozen titans
   [7] = {
     ["unitsFrozen"] = "Units Frozen",
-    ["pushDamage"] = "Push Damage",
-    ["idk"] = "idk",
+    ["damageBlockedWithIce"] = "Damage Blocked With Ice",
   },
   -- hazardous mechs
   [8] = {
-    ["idk"] = "idk",
-    ["idk"] = "idk",
-    ["idk"] = "idk",
-  },
-  -- secret squad
-  [9] = {
-    ["idk"] = "idk",
-    ["idk"] = "idk",
-    ["idk"] = "idk",
+    ["leapDistance"] = "Distance Traveled With Leap"
   },
   -- bombermechs
-  [10] = {
+  [9] = {
     ["bombsCreated"] = "Bombs Created",
     ["bombDamage"] = "Bomb Damage",
-    ["idk"] = "idk",
-  },
-  -- arachnophiles
-  [11] = {
-    ["spidersCreated"] = "Spiders Created",
-    ["idk"] = "idk",
-    ["idk"] = "idk",
   },
   -- mist eaters
-  [12] = {
-    ["idk"] = "idk",
-    ["tilesSmoked"] = "Tiles Smoked",
-    ["attacksCancelled"] = "Attacks Cancelled",
-  },
-  -- heat sinkers
-  [13] = {
-    ["boosts"] = "Mech Boosts",
-    ["fireDamage"] = "Fire Damage",
-    ["unitsFired"] = "Units Set on Fire",
+  [10] = {
+    -- NADA
   },
   -- cataclysm
-  [14] = {
+  [11] = {
     ["tilesCracked"] = "Tiles Cracked",
     ["tilesDestroyed"] = "Tiles Destroyed",
     ["vekPitted"] = "Vek Pitted",
+  },
+  -- arachnophiles
+  [12] = {
+    ["spidersCreated"] = "Spiders Created",
+    -- ["richochetDoubleKills"] = "Richochet Weapon Double Kills (WIP)"
+  },
+  -- heat sinkers
+  [13] = {
+    ["unitsFired"] = "Units Set on Fire",
+    ["tilesFired"] = "Tiles Set on Fire",
+    ["boosts"] = "Mech Boosts (WIP)",
+    ["fireDamage"] = "Fire Damage (WIP)",
+  },
+  -- secret squad
+  [14] = {
+    -- NADA
   },
 }
 
@@ -100,19 +89,23 @@ end
 local function showGameStatsInRightPane(statsTable, rightPane)
   local function createGeneralLabel(text, key)
     if statsTable[key] then
-      local text = UiWrappedText(text .. ": " .. statsTable[key])
-        :width(1)      
+      Ui()
+        :width(1):heightpx(15)
+        :decorate({
+          DecoText(text .. ": " .. statsTable[key])
+        })
         :addTo(rightPane.statsBox.generalStats)
-      text.textAlign = "center"  
     end 
   end
 
   local function createSquadSpecificLabel(text, key)
     if statsTable[key] then
-      local text = UiWrappedText(text .. ": " .. statsTable[key])
-        :width(1)      
+      Ui()
+        :width(1):heightpx(15)
+        :decorate({
+          DecoText(text .. ": " .. statsTable[key])
+        })
         :addTo(rightPane.statsBox.specificStats)
-      text.textAlign = "center"  
     end 
   end
 
@@ -124,28 +117,35 @@ local function showGameStatsInRightPane(statsTable, rightPane)
   rightPane.statsBox.generalStats = UiWeightLayout()
     :width(1):height(0.5)
     :orientation(false):vgap(5)
-    :decorate({
-      DecoFrame(deco.colors.buttonhlcolor, deco.colors.debugMagenta, 2)
-    })
     :addTo(rightPane.statsBox)
+  rightPane.statsBox.generalStats.padt = 10
+  Ui()
+    :width(1):heightpx(15)
+    :decorate({
+      DecoText("GENERAL STATS")
+    })
+  :addTo(rightPane.statsBox.generalStats)
   rightPane.statsBox.specificStats = UiWeightLayout()
     :width(1):height(0.5)
     :orientation(false):vgap(5)
-    :decorate({
-      DecoFrame(deco.colors.buttonhlcolor, deco.colors.debugYellow, 2)
-    })
     :addTo(rightPane.statsBox)
+  rightPane.statsBox.specificStats.padt = 10
+  Ui()
+    :width(1):heightpx(15)
+    :decorate({
+      DecoText("SQUAD-SPECIFIC STATS")
+    })
+  :addTo(rightPane.statsBox.specificStats)
   
   createGeneralLabel("Kills", "kills")
   createGeneralLabel("Damage Dealt", "damageDealt")
+  createGeneralLabel("Damage Taken", "damageTaken")
+  createGeneralLabel("Self Damage", "selfDamage")
+  createGeneralLabel("Healing", "healing")  
   createGeneralLabel("Vek Pushed", "vekPushed")
-  createGeneralLabel("Vek Blocked", "vekBlocked")
-  createGeneralLabel("Grid Damage Taken", "gridDamage")
-  createGeneralLabel("Grid Resists", "gridResists")
-  -- createGeneralLabel("Damage Taken", "damageTaken")
-  -- createGeneralLabel("Self Damage", "selfDamage")    
-  -- createGeneralLabel("Vek Self Damage", "vekSelfDamage")
-  -- createGeneralLabel("Vek Self Kills", "vekSelfKills")
+  createGeneralLabel("Vek Spawns Blocked", "vekBlocked")
+  createGeneralLabel("Vek Drowned", "vekDrowned")
+  createGeneralLabel("Vek Pitted", "vekPitted")
 
   for k, v in pairs(squadSpecificLabels[statsTable.squadId]) do
     createSquadSpecificLabel(v, k)    
@@ -169,25 +169,15 @@ local function showGameHistoryWindow()
     :hgap(1)
     :width(1)
     :heightpx(maxH)
-    :decorate({
-      -- DecoFrame(deco.colors.buttonhlcolor, deco.colors.debugGreen, 5)
-    })
-    -- :anchor("center", "center")
     :addTo(frame)
 
     local leftPane = UiWeightLayout()
     :width(0.33):height(1):vgap(1)
-    :decorate({
-      DecoFrame(deco.colors.buttonhlcolor, deco.colors.debugMagenta, 2)
-    })
     :addTo(box)
     leftPane.scroll = UiScrollArea():width(1):height(1):padding(5):addTo(leftPane)
 
     local rightPane = UiWeightLayout()
     :width(0.77):height(1):vgap(1)
-    :decorate({
-      DecoFrame(deco.colors.buttonhlcolor, deco.colors.debugRed, 2)
-    })
     :addTo(box)
     rightPane.statsBox = UiWeightLayout()
       :width(1)
@@ -195,10 +185,7 @@ local function showGameHistoryWindow()
 
     local gameHistory = UiBoxLayout()
       :width(1):height(1):vgap(3):anchorH("center")
-      :decorate({
-      DecoFrame(deco.colors.buttonhlcolor, deco.colors.debugTeal, 2)
-    })
-    :addTo(leftPane.scroll)
+      :addTo(leftPane.scroll)
 
     local games = fetchGameHistory()
     local squadPalettes = sdlext.squadPalettes()
@@ -233,7 +220,7 @@ local function showGameHistoryWindow()
       local buttonBox = UiWeightLayout()
       :width(1):heightpx(100):hgap(1)
       :decorate({
-        DecoFrame(bgColor, nil, 2),
+        DecoFrame(bgColor, sdl.rgba(0, 0, 0, 0), nil),
         DecoButton(),
       })
       :addTo(gameHistory)

@@ -1,24 +1,18 @@
-local game = nil
+local function logStatIncrement(value, statsTableKey)
+  if LOG_STAT_MESSAGES then
+    LOG("+" .. value .. " " .. statsTableKey)
+  end
+end
+
 local statsTable = {}
 
 local vekSelfDamageTable = {}
 local playerSelfDamageTable = {}
 local beamWeaponDamageTable = {}
 local lightningWeaponDamageTable = {}
+local bomblingDamageTable = {}
 local prevGridHealth = nil
-
-local function dump(o)
-  if type(o) == 'table' then
-     local s = '{ '
-     for k,v in pairs(o) do
-        if type(k) ~= 'number' then k = '"'..k..'"' end
-        s = s .. '['..k..'] = ' .. dump(v) .. ','
-     end
-     return s .. '} '
-  else
-     return tostring(o)
-  end
-end
+local skipFireStat = false
 
 math.randomseed(os.time())
 local random = math.random
@@ -31,166 +25,95 @@ local function uuid()
 end
 
 local function initializeStatsTable()
-  local answer = {}
-  --SQUAD-SPECIFIC STATS
+  local stats = {}
+  -- GENERAL STATS
+  stats["kills"] = 0
+  stats["damageDealt"] = 0
+  stats["damageTaken"] = 0
+  stats["selfDamage"] = 0
+  stats["healing"] = 0
+  stats["gridResists"] = 0
+  stats["gridDamage"] = 0
+  stats["vekPushed"] = 0
+  stats["vekBlocked"] = 0
+  stats["vekDrowned"] = 0
 
+  --SQUAD-SPECIFIC STATS
   -- rift walkers
-  answer["punchDistance"] = 0 -- incomplete
+  stats["punchDistance"] = 0
 
   -- zenith guard 
-  answer["selfDamage"] = 0 -- complete
-  answer["shields"] = 0 -- complete
-  answer["beamDamage"] = 0 -- complete
+  stats["shields"] = 0
+  stats["beamDamage"] = 0
 
   --steel judoka
-  answer["vekSelfDamage"] = 0 -- incomplete
-  answer["vekSelfKills"] = 0 -- incomplete
+  stats["vekSelfDamage"] = 0
+  stats["vekSelfKills"] = 0
 
   -- rusting hulks
-  answer["tilesSmoked"] = 0
-  answer["stormDamage"]= 0 -- incomplete
-  answer["attacksCancelled"] = 0
+  stats["tilesSmoked"] = 0
+  stats["attacksCancelled"] = 0
+  stats["stormDamage"]= 0 -- incomplete
 
   -- blitzkrieg
-  answer["lightningDamage"] = 0 -- complete
-  -- answer["chainSelfDamage"] = 0 -- incomplete
-  -- answer["rocksLaunched"] = 0 -- incomplete
+  stats["lightningDamage"] = 0
+  stats["lightningSelfDamage"] = 0
+  stats["rocksLaunched"] = 0
 
   -- flame behemoths
-  answer["unitsFired"] = 0
-  answer["tilesFired"] = 0
-  answer["fireDamage"] = 0 -- incomplete
-  answer["teleportDistance"] = 0 -- incomplete
+  stats["unitsFired"] = 0
+  stats["tilesFired"] = 0
+  stats["fireDamage"] = 0 -- incomplete
 
   -- frozen titans
-  answer["unitsFrozen"] = 0
-  answer["pushDamage"]= 0
-  answer["damageBlockedWithIce"] = 0 -- incomplete
-
-  -- bombermechs
-  answer["vekBlocked"] = 0
-  answer["bombsCreated"] = 0 -- incomplete
-  answer["bombDamage"] = 0 -- incomplete
-
-  -- mist eaters
-  answer["healing"] = 0
-  answer["tilesSmoked"] = 0
-  answer["attacksCancelled"] = 0
-
-  -- cataclysm
-  answer["tilesCracked"] = 0 -- incomplete
-  answer["tilesDestroyed"] = 0
-  answer["vekPitted"] = 0
+  stats["unitsFrozen"] = 0
+  stats["damageBlockedWithIce"] = 0
 
   -- hazardous mechs
-  answer["selfDamage"] = 0
-  answer["healing"] = 0
-  answer["pushDamage"] = 0
+  stats["leapDistance"] = 0
+
+  -- bombermechs
+  stats["bombsCreated"] = 0
+  stats["bombDamage"] = 0
+
+  -- mist eaters
+
+  -- cataclysm
+  stats["tilesCracked"] = 0
+  stats["tilesDestroyed"] = 0
+  stats["vekPitted"] = 0
 
   -- arachnophiles
-  answer["vekBlocked"] = 0
-  answer["spidersCreated"] = 0 -- incomplete
-  answer["richocetDoubleKills"] = 0 -- incomplete
+  stats["spidersCreated"] = 0
+  stats["richocetDoubleKills"] = 0 -- incomplete
 
   -- heat sinkers
-  answer["boosts"] = 0 -- incomplete
-  answer["unitsFired"] = 0
-  answer["fireDamage"] = 0 -- incomplete
+  -- stats["boosts"] = 0 -- waiting for the next version of modapiext for the pawnIsBoosted hook
+  stats["unitsFired"] = 0
+  stats["tilesFired"] = 0
+  stats["fireDamage"] = 0 -- incomplete
 
   -- secret squad
-  -- ??????
-  
-  -- GENERAL STATS
-  answer["kills"] = 0 -- complete
-  answer["damage"] = 0 -- complete
-  answer["damageTaken"] = 0 -- complete
-  answer["selfDamage"] = 0 -- complete
-  answer["healing"] = 0 -- complete
-  answer["gridResists"] = 0 -- complete
-  answer["gridDamage"] = 0 -- incomplete BUG: grid can change between missions, so make sure to update it in onMissionChanged or whatever
-  answer["vekPushed"] = 0 -- complete
-  answer["vekBlocked"] = 0 -- complete
-  answer["vekDrowned"] = 0 -- complete
-  answer["vekPitted"] = 0 -- complete
+  stats["ramDistance"] = 0
 
   -- OTHER
-  answer["squadId"] = -1
-  answer["difficulty"] = -1
-  answer["islandsSecured"] = 0
+  stats["squadId"] = -1
+  stats["difficulty"] = -1
+  stats["islandsSecured"] = 0
 
-  return answer
+  return stats
 end
 
-
-modApi.events.onMissionUpdate:subscribe(function()
-  if Game:IsEvent(7) then -- grid damaged
-    -- TODO: if you take grid damage that causes you to lose the game, the games ends before this event is fired
-    -- so maybe we need to manually add 1 to gridDamage when we lose??
-    local currentGridHealth = game:GetPower():GetValue()
-    local damageTaken = prevGridHealth - currentGridHealth
-    LOG("+" .. damageTaken .. " grid damage taken!")
-    statsTable["gridDamage"] = statsTable["gridDamage"] + damageTaken
-    prevGridHealth = currentGridHealth
-  end
-  if Game:IsEvent(9) then -- grid resisted
-    LOG("+1 grid resists!")
-    statsTable["gridResists"] = statsTable["gridResists"] + 1
-  end
-  if Game:IsEvent(16) then -- vek blocked
-    LOG("+1 to vekBlocked")
-    statsTable["vekBlocked"] = statsTable["vekBlocked"] + 1
-  end
-  if Game:IsEvent(26) then -- forest set on fire
-    LOG("+1 to tilesFired")
-    statsTable["tilesFired"] = statsTable["tilesFired"] + 1
-  end
-  if Game:IsEvent(27) then -- sand turned to smoke
-    LOG("+1 to tilesSmoked")
-    statsTable["tilesSmoked"] = statsTable["tilesSmoked"] + 1
-  end
-	-- EVENT_SOMETHING_WITH_SKILL_TARGETING_1 = 1
-	-- -- EVENT_ENEMY_KILLED = 2
-	-- -- EVENT_MOUNTAIN_DESTROYED = 3
-	-- EVENT_ENEMY_TURN = 4
-	-- EVENT_PLAYER_TURN = 5
-	-- EVENT_GRID_RESISTED = 9
-	-- EVENT_GRID_DAMAGED = 7
-	-- EVENT_SOMETHING_WITH_SKILL_TARGETING_2 = 11
-	-- EVENT_MINOR_ENEMY_KILLED = 12
-	-- EVENT_SOMETHING_WITH_UNIT = 13
-	-- EVENT_TURN_START = 14
-	-- -- EVENT_SPAWNBLOCKED = 16
-	-- EVENT_1_GRID_REMAINING = 17
-	-- -- EVENT_ACID_DESTROYED = 18
-	-- EVENT_ENEMY_DAMAGED = 19
-	-- EVENT_ENEMY_KILLED_2 = 21
-	-- EVENT_MECH_DAMAGED = 24
-	-- EVENT_MECH_DESTROYED = 25
-	-- EVENT_FOREST_SET_ON_FIRE = 26
-	-- EVENT_DESERT_TURNED_TO_SMOKE = 27
-	-- EVENT_UNIT_DESTROYED = 28
-	-- EVENT_MECH_REDUCED_TO_1_HP = 29
-	-- EVENT_MECH_DESTROYED_2 = 30
-	-- EVENT_MECH_REVIVED = 31
-	-- EVENT_MECH_REPAIRED = 32
-	-- EVENT_1_2_GRID_REMAINING = 34
-	-- EVENT_POD_DESTROYED = 37
-	-- EVENT_ATTACK_CANCELED_WITH_SMOKE = 42
-	-- EVENT_ENEMY_STEPPED_ON_MINE = 43
-	-- EVENT_UNIQUE_BUILDING_DESTROYED = 55
-	-- -- EVENT_REPAIR_PICKUP = 72
-	-- -- EVENT_REPAIR_UNDO = 73
-  
-  -- the only one I can see needing is ATTACK_CANCELLED_WITH_SMOKE, but I think I can do that by myself anyway
-end)
+local function loadCurrentStats()
+  return modApi:readModData("current")
+end
 
 local function saveStats()
-  LOG("saveStats is saving: " .. dump(statsTable))
   modApi:writeModData("current", statsTable)
 end
 
 local function saveFinishedGameStats(gameId, victory, difficulty, islandsSecured, timeFinished)
-  LOG("finished game, recording stats under gameId game" .. gameId)
+  LOG("Finished game, recording extra stats under gameId " .. gameId)
   statsTable["gameId"] = gameId
   statsTable["victory"] = victory
   statsTable["difficulty"] = difficulty
@@ -204,44 +127,69 @@ local function saveFinishedGameStats(gameId, victory, difficulty, islandsSecured
       obj["finishedGames"][index] = statsTable
     end
   )
--- modApi:writeModData("game" .. gameId, statsTable)
 end
 
-local function loadStats()
-  local answer = modApi:readModData("current")
-  LOG("loadStats returning: " .. dump(answer))
-  return answer
-end
+modApi.events.onContinueClicked:subscribe(function() 
+  statsTable = loadCurrentStats()
+end)
 
-modApi.events.onGameClassInitialized:subscribe(function(gameClass, theGame)
-  LOG("onGameClassInitialized!")
-  game = theGame
+modApi.events.onMissionUpdate:subscribe(function()
+  -- IsEvent() numbers come from ITB modding discord
+  if Game:IsEvent(7) then -- grid damaged
+    -- TODO: if you take grid damage that causes you to lose the game, this event isn't fired
+    -- so maybe we need to manually add 1 to gridDamage when we lose?
+    local currentGridHealth = Game:GetPower():GetValue()
+    local damageTaken = prevGridHealth - currentGridHealth
+    logStatIncrement(damageTaken, "gridDamage")
+    statsTable["gridDamage"] = statsTable["gridDamage"] + damageTaken
+    prevGridHealth = currentGridHealth
+  end
+  if Game:IsEvent(9) then -- grid resisted
+    logStatIncrement(1, "gridResists")
+    statsTable["gridResists"] = statsTable["gridResists"] + 1
+  end
+  if Game:IsEvent(16) then -- vek blocked
+    logStatIncrement(1, "vekBlocked")
+    statsTable["vekBlocked"] = statsTable["vekBlocked"] + 1
+  end
+  if Game:IsEvent(26) then -- forest set on fire
+    if skipFireStat then -- it's hacky, but it totally works
+      skipFireStat = false
+    else
+      logStatIncrement(1, "tilesFired")
+      statsTable["tilesFired"] = statsTable["tilesFired"] + 1
+    end    
+  end
+  if Game:IsEvent(27) then -- sand turned to smoke
+    logStatIncrement(1, "tilesSmoked")
+    statsTable["tilesSmoked"] = statsTable["tilesSmoked"] + 1
+  end
+  if Game:IsEvent(42) then -- attack cancelled with smoke
+    logStatIncrement(1, "attacksCancelled")
+    statsTable["attacksCancelled"] = statsTable["attacksCancelled"] + 1
+  end
 end)
 
 modApi.events.onPreStartGame:subscribe(function() 
-  LOG("onPreStartGame EVENT")
   -- starting new game, so get new stats and write them to the file
   statsTable = initializeStatsTable()
   saveStats()
 end)
 
-modApi.events.onPostStartGame:subscribe(function() 
-  LOG("onPostStartGame EVENT")
-  LOG("setting squad id to " .. GAME.additionalSquadData.squadIndex) 
+modApi.events.onPostStartGame:subscribe(function()
   statsTable["squadId"] = GAME.additionalSquadData.squadIndex
 end)
 
--- loading into game
+-- this is fired on your first time loading into the game.
+-- interestingly, if you go back to the main menu and then click 'continue', it won't fire
 modapiext.events.onGameLoaded:subscribe(function(mission)
-  LOG("onGameLoaded EVENT")
-  statsTable = loadStats()
-  LOG("setting prevGridHealth to " .. game:GetPower():GetValue())
-  prevGridHealth = game:GetPower():GetValue()
+  LOG("LOADING INTO GAME")
+  statsTable = loadCurrentStats()
+  prevGridHealth = Game:GetPower():GetValue()
 end)
 
--- saving game (which happens after every action?)
+-- this is fired a LOT
 modApi.events.onSaveGame:subscribe(function() 
-  LOG("onSaveGame EVENT")
   -- RegionData is sometimes nil???
   if RegionData then
     statsTable["islandsSecured"] = 0
@@ -259,50 +207,39 @@ modApi.events.onGameVictory:subscribe(function(difficulty, islandsSecured, squad
 end)
 
 modApi.events.onMissionStart:subscribe(function(mission)
-  prevGridHealth = game:GetPower():GetValue()
-  LOG("updating grid power to " .. prevGridHealth)
+  -- grid power can change between missions, so update it on every mission start
+  prevGridHealth = Game:GetPower():GetValue()
 end)
 
--- fires on mission win
-modApi.events.onMissionEnd:subscribe(function(mission)
-  LOG("onMissionEnd()")
-  -- maybe we can detect if the final mission is lost by checking if all player mechs are dead here?
-end)
-
--- this fires on mission loss
+-- fires on mission loss, and when you go to the main menu from a mission
 modApi.events.onMissionChanged:subscribe(function(mission)
-  LOG("onMissionChanged(), power level is ".. game:GetPower():GetValue())
-  if game:GetPower():GetValue() <= 0 then
-    LOG("YOU LOST THE GAME")
-    local gameId = uuid()
-    local difficulty = GetDifficulty()
-    -- local islandsSecured = 0
-    -- for i = 0, 3 do
-    --   if GAME.RegionData["island"..i].secured then
-    --     islandsSecured = islandsSecured + 1
-    --   end
-    -- end
-    -- local timeFinished = os.time(os.date("!*t")) -- TODO: not sure if this works
-    local timeFinished = os.time()
-    saveFinishedGameStats(gameId, false, difficulty, statsTable["islandsSecured"], timeFinished)
-  end
+  if Game then -- prevent an error when going back to the main menu
+    if Game:GetPower():GetValue() <= 0 then -- GAME OVER
+      local gameId = uuid()
+      local difficulty = GetDifficulty()
+      -- RegionData is nil at this point so we can't do this
+      -- local islandsSecured = 0
+      -- for i = 0, 3 do
+      --   if GAME.RegionData["island"..i].secured then
+      --     islandsSecured = islandsSecured + 1
+      --   end
+      -- end
+      local timeFinished = os.time()
+      saveFinishedGameStats(gameId, false, difficulty, statsTable["islandsSecured"], timeFinished)
+    end  
+  end  
 end)
 
-modApi.events.onGameStateChanged:subscribe(function(currentGameState, oldGameState)
-  LOG("game state changing from " .. oldGameState .. " to " .. currentGameState)
-end)
-
--- subscribe to the events we need to
 modapiext.events.onPawnIsFire:subscribe(function(mission, pawn, isFire)
   if isFire then
-    LOG("+1 to unitsFired")
+    logStatIncrement(1, "unitsFired")
     statsTable["unitsFired"] = statsTable["unitsFired"] + 1
   end
 end)
 
 modapiext.events.onPawnIsFrozen:subscribe(function(mission, pawn, isFrozen)
   if isFrozen then
-    LOG("+1 to unitsFrozen")
+    logStatIncrement(1, "unitsFrozen")
     statsTable["unitsFrozen"] = statsTable["unitsFrozen"] + 1
   end
 end)
@@ -310,55 +247,72 @@ end)
 modapiext.events.onPawnIsShielded:subscribe(function(mission, pawn, isShield)
   -- TODO: why make the distinction between player and enemy? we don't for fire or freeze
   if isShield and pawn:IsPlayer() then -- if a player unit gained a shield (we handle buildings later)
-    LOG("+1 to shields")
+    logStatIncrement(1, "shields")
     statsTable["shields"] = statsTable["shields"] + 1
   end
 end)
 
+-- TODO: waiting for next release of ITB-ModUtils (aka modapiext)
+-- modapiext.events.onPawnIsBoosted:subscribe(function(mission, pawn, isBoost)
+--   if pawn:IsPlayer() and isBoost then
+--     logStatIncrement(1, "boosts")
+--     statsTable["boosts"] = statsTable["boosts"] + 1  
+--   end  
+-- end)
+
 modapiext.events.onPawnDamaged:subscribe(function(mission, pawn, damageTaken)
-  LOG("onPawnDamaged()")
   if pawn:IsEnemy() then
-    LOG("+" .. damageTaken .. " damage")
-    statsTable["damage"] = statsTable["damage"] + damageTaken
+    logStatIncrement(damageTaken, "damageDealt")
+    statsTable["damageDealt"] = statsTable["damageDealt"] + damageTaken
     if vekSelfDamageTable[pawn:GetId()] then
-      LOG("+" .. damageTaken .. " to vek self damage!")
+      logStatIncrement(damageTaken, "vekSelfDamage")
       statsTable["vekSelfDamage"] = statsTable["vekSelfDamage"] + damageTaken
       vekSelfDamageTable[pawn:GetId()] = nil
     end
-  elseif pawn:IsPlayer() then
+  elseif pawn:IsPlayer() and pawn:GetMechName() ~= "Walking Bomb" and pawn:GetMechName() ~= "Arachnoid" then
     if playerSelfDamageTable[pawn:GetId()] then
-      LOG("+" .. damageTaken .. " self damage!")
-      statsTable["selfDamage"] = statsTable["selfDamage"] + 1
+      logStatIncrement(damageTaken, "selfDamage")
+      statsTable["selfDamage"] = statsTable["selfDamage"] + damageTaken
       playerSelfDamageTable[pawn:GetId()] = nil
     end
-    LOG("+" .. damageTaken .. " to damage taken!")    
+    logStatIncrement(damageTaken, "damageTaken")   
     statsTable["damageTaken"] = statsTable["damageTaken"] + damageTaken
   end
 
   if beamWeaponDamageTable[pawn:GetId()] then
-    LOG("+" .. damageTaken .. " to beam weapon damage")
+    logStatIncrement(damageTaken, "beamDamage")
     statsTable["beamDamage"] = statsTable["beamDamage"] + damageTaken
     beamWeaponDamageTable[pawn:GetId()] = nil
   end
 
   if lightningWeaponDamageTable[pawn:GetId()] then
-    LOG("+" .. damageTaken .. " to lightning weapon damage")
+    logStatIncrement(damageTaken, "lightningDamage")
     statsTable["lightningDamage"] = statsTable["lightningDamage"] + damageTaken
+    if pawn:IsPlayer() then
+      logStatIncrement(damageTaken, "lightningSelfDamage")
+      statsTable["lightningSelfDamage"] = statsTable["lightningSelfDamage"] + damageTaken
+    end
     lightningWeaponDamageTable[pawn:GetId()] = nil
+  end
+
+  if bomblingDamageTable[pawn:GetId()] then
+    logStatIncrement(damageTaken, "bombDamage")
+    statsTable["bombDamage"] = statsTable["bombDamage"] + damageTaken
+    bomblingDamageTable[pawn:GetId()] = nil
   end
 
 end)
 
 modapiext.events.onPawnHealed:subscribe(function(mission, pawn, healingTaken)
   if pawn:IsPlayer() then
-    LOG("+" .. healingTaken .. " healing")
+    logStatIncrement(healingTaken, "healing")
     statsTable["healing"] = statsTable["healing"] + healingTaken
   end
 end)
 
 modapiext.events.onPawnKilled:subscribe(function(mission, pawn)
   if pawn:IsEnemy() then
-    LOG("+1 to kills")
+    logStatIncrement(1, "kills")
     statsTable["kills"] = statsTable["kills"] + 1
 
     local terrain = Board:GetTerrain(pawn:GetSpace())
@@ -366,136 +320,181 @@ modapiext.events.onPawnKilled:subscribe(function(mission, pawn)
     local isMassive = _G[pawn:GetType()].Massive
     if not isFlying then
       if not isMassive and (terrain == TERRAIN_ACID or terrain == TERRAIN_WATER or terrain == TERRAIN_LAVA) then
-        LOG("+1 to vekDrowned")
+        logStatIncrement(1, "vekDrowned")
         statsTable["vekDrowned"] = statsTable["vekDrowned"] + 1
       elseif terrain == TERRAIN_HOLE then
-        LOG("+1 to vekPitted")
+        logStatIncrement(1, "vekPitted")
         statsTable["vekPitted"] = statsTable["vekPitted"] + 1
       end
     end
   end
 end)
 
--- pawn: the pawn using the skill
--- event: one of the events of the skill
 local function checkEventForStats(pawn, weaponId, event)
   local isValid = Board:IsValid(event.loc)
   local targetPawn = Board:GetPawn(event.loc)
   if isValid then
-    -- TODO: make it a chain of elseifs? because if an attack is applying smoke, it will cancel the fire but we are still recording +1 tilesFired
     if event.iSmoke == EFFECT_CREATE then
       if pawn:IsPlayer() and not Board:IsSmoke(event.loc) then
-        LOG("+1 to tilesSmoked")
+        logStatIncrement(1, "tilesSmoked")
         statsTable["tilesSmoked"] = statsTable["tilesSmoked"] + 1
-      end
-      if targetPawn and targetPawn:GetQueued() and not targetPawn:IsIgnoreSmoke() then -- TODO: aren't some enemies immune to smoke?
-        -- spider enemy can spawn spiderlings which are immune to smoke
-        LOG("+1 to attacksCancelled")
-        statsTable["attacksCancelled"] = statsTable["attacksCancelled"] + 1
       end
     end
     if event.iFire == EFFECT_CREATE then
-      -- we have a pawnIsFire hook, so we can check 
-      if pawn:IsPlayer() and Board:GetFireType(event.loc) == 0 then
-        LOG("+1 to tilesFired")
+      if pawn:IsPlayer() and Board:GetFireType(event.loc) == 0 then -- if there's not already fire on this tile
+        logStatIncrement(1, "tilesFired")
         statsTable["tilesFired"] = statsTable["tilesFired"] + 1
+        -- if this event will damage a forest tile, then we will incorrectly record an extra +1 tilesFired
+        if event.iDamage > 0 and Board:GetTerrain(event.loc) == TERRAIN_FOREST then
+          skipFireStat = true -- it's hacky, but it totally works
+        end
       end
     end
     if event.iShield == EFFECT_CREATE then
       if pawn:IsPlayer() and Board:IsBuilding(event.loc) and not Board:IsShield(event.loc) then
-        LOG("+1 to shields")
+        logStatIncrement(1, "shields")
         statsTable["shields"] = statsTable["shields"] + 1
       end
     end
     if event.iCrack == EFFECT_CREATE then
-      -- TODO: IsCrackable() is not 100% reliable
-      -- iscrackable returns true for mountains and ice tiles but those can't be cracked
-      if pawn:IsPlayer() and Board:IsCrackable(event.loc) then
-        LOG("+1 to tilesCracked")
+      local terrain = Board:GetTerrain(event.loc)
+      -- IsCrackable() returns true for mountains and ice tiles, but it's the wrong kind of cracking, so we need to do some more checks
+      if pawn:IsPlayer() and Board:IsCrackable(event.loc) and terrain ~= TERRAIN_ICE and terrain ~= TERRAIN_MOUNTAIN then
+        logStatIncrement(1, "tilesCracked")
         statsTable["tilesCracked"] = statsTable["tilesCracked"] + 1
       end
     end
-    if event.iPush ~= 4 and targetPawn then
+    if event.iPush ~= DIR_NONE and event.iPush ~= DIR_FLIP and targetPawn then
       -- check if a vek is being pushed onto a valid space
       local endPoint = event.loc + DIR_VECTORS[event.iPush]
       if targetPawn:IsEnemy() and not targetPawn:IsGuarding() and Board:IsValid(endPoint) then
-        LOG("+1 to vekPushed")
+        logStatIncrement(1, "vekPushed")        
         statsTable["vekPushed"] = statsTable["vekPushed"] + 1
-        
-        -- now check if the vek will drown or fall into a pit
-        -- if not targetPawn:IsFlying() then
-        --   local terrain = Board:GetTerrain(endPoint)
-        --   if not targetPawn:IsMassive() and (terrain == TERRAIN_ACID or terrain == TERRAIN_LAVA or terrain == TERRAIN_WATER) then
-        --     LOG("+1 to vekDrowned")
-        --     statsTable["vekDrowned"] = statsTable["vekDrowned"] + 1
-        --   elseif terrain == TERRAIN_HOLE then
-        --     LOG("+1 to vekPitted")
-        --     statsTable["vekPitted"] = statsTable["vekPitted"] + 1
-        --   end
-        -- end
       end
     end
     if event.iDamage > 0 then
-
-      -- test for player self damage and vek self damage
       if targetPawn then
-        if modApi:stringStartsWith(weaponId, "Prime_Lasermech") then        
-          LOG("marking pawn " .. targetPawn:GetMechName() .. " for beam weapon damage")
+        if modApi:stringStartsWith(weaponId, "Prime_Lasermech") then
           beamWeaponDamageTable[targetPawn:GetId()] = true
         end
 
         if modApi:stringStartsWith(weaponId, "Prime_Lightning") then
-          LOG("marking pawn " .. targetPawn:GetMechName() .. " for lightning weapon damage")
           lightningWeaponDamageTable[targetPawn:GetId()] = true
         end
 
-        if pawn:IsPlayer() and targetPawn:IsPlayer() and not targetPawn:IsShield() then
-          LOG("marking targetPawn " .. targetPawn:GetMechName() .. " to record self damage")
+        if pawn:IsPlayer() and targetPawn:IsPlayer() and not targetPawn:IsShield()
+        and targetPawn:GetMechName() ~= "Walking Bomb" and targetPawn:GetMechName() ~= "Arachnoid" then
           playerSelfDamageTable[targetPawn:GetId()] = true
         end
+        
         if pawn:IsEnemy() and targetPawn:IsEnemy() and not targetPawn:IsShield() then
-          LOG("marking targetPawn " .. targetPawn:GetMechName() .. " to record vek self damage")
           vekSelfDamageTable[targetPawn:GetId()] = true
+          if Board:IsDeadly(event, targetPawn) then
+            -- we miss out on vek with weapons that can shoot through shields, but I don't think any of those exist (maybe in other mods?)
+            logStatIncrement(1, "vekSelfKills")
+            statsTable["vekSelfKills"] = statsTable["vekSelfKills"] + 1
+          end
+        end
+
+        if targetPawn:IsFrozen() and not targetPawn:IsShield() then -- we'll handle buildings a little further down
+          logStatIncrement(event.iDamage, "damageBlockedWithIce")
+          statsTable["damageBlockedWithIce"] = statsTable["damageBlockedWithIce"] + event.iDamage
+        end
+
+        if modApi:stringStartsWith(weaponId, "DeployUnit_SelfDamage") and pawn:GetId() ~= targetPawn:GetId() then
+          bomblingDamageTable[targetPawn:GetId()] = true
+        end
+
+        if modApi:stringStartsWith(weaponId, "Ranged_Arachnoid") and event.bKO_Effect then -- could check with Board:IsDeadly() as well
+          logStatIncrement(1, "spidersCreated")
+          statsTable["spidersCreated"] = statsTable["spidersCreated"] + 1
+        end
+
+      else
+        if Board:IsFrozen(event.loc) and not Board:IsShield(event.loc) then
+          logStatIncrement(event.iDamage, "damageBlockedWithIce")
+          statsTable["damageBlockedWithIce"] = statsTable["damageBlockedWithIce"] + event.iDamage
         end
       end
 
-      -- test for damaging a cracked tile
       if Board:IsCracked(event.loc) then
-        LOG("+1 to tilesDestroyed")
+        logStatIncrement(1, "tilesDestroyed")
         statsTable["tilesDestroyed"] = statsTable["tilesDestroyed"] + 1
       end
 
-      -- test for creating smoke from a sand tile or creating fire from a forest tile
-      -- if Board:GetTerrain(event.loc) == TERRAIN_SAND then
-      --   LOG("+1 to tilesSmoked")
-      --   statsTable["tilesSmoked"] = statsTable["tilesSmoked"] + 1
-      -- elseif Board:GetTerrain(event.loc) == TERRAIN_FOREST then
-      --   LOG("+1 to tilesFired")
-      --   statsTable["tilesFired"] = statsTable["tilesFired"] + 1
-      -- end
     end
+
   end
 end
 
 local function handleSkillStart(mission, pawn, weaponId, p1, p2)
-  LOG("custom handler handleSkillStart: " .. pawn:GetMechName() .. " is using weaponId " .. weaponId)
+  -- LOG("handleSkillStart: " .. pawn:GetMechName() .. " is using weaponId " .. weaponId)
   local fx = _G[weaponId]:GetSkillEffect(p1, p2)
-  LOG("Looping through " .. fx.effect:size() .. " events")
+  
+  -- loop through effects, which are typically player attacks
   for eventIndex = 1, fx.effect:size() do
     local event = fx.effect:index(eventIndex)
     checkEventForStats(pawn, weaponId, event)
   end
-  LOG("Next, looping through " .. fx.q_effect:size() .. " queued events")
+
+  -- loop through queued effects, which are typically vek attacks
   for eventIndex = 1, fx.q_effect:size() do
     local event = fx.q_effect:index(eventIndex)
     checkEventForStats(pawn, weaponId, event)
+  end
+
+  if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Ranged_Rockthrow") then
+    logStatIncrement(1, "rocksLaunched")
+    statsTable["rocksLaunched"] = statsTable["rocksLaunched"] + 1
+  end
+
+  if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Prime_Leap") then
+    local distanceTraveled = p1:Manhattan(p2)
+    logStatIncrement(distanceTraveled, "leapDistance")
+    statsTable["leapDistance"] = statsTable["leapDistance"] + distanceTraveled
+  end
+
+  if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Prime_Punchmech") then
+    local distanceTraveled = p1:Manhattan(p2)
+    if Board:GetPawn(p2) or Board:IsBuilding(p2) then
+      -- if you target a pawn/building, then the punch mech will travel to the tile just before the target, so subtract 1 to get the actual distance traveled
+      distanceTraveled = distanceTraveled - 1
+    end
+    if distanceTraveled > 0 then
+      logStatIncrement(distanceTraveled, "punchDistance")
+      statsTable["punchDistance"] = statsTable["punchDistance"] + distanceTraveled
+    end
+  end
+
+  -- works the same as punchDistance
+  if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Vek_Beetle") then
+    local distanceTraveled = p1:Manhattan(p2)
+    if Board:GetPawn(p2) or Board:IsBuilding(p2) then distanceTraveled = distanceTraveled - 1 end
+    if distanceTraveled > 0 then
+      logStatIncrement(distanceTraveled, "ramDistance")
+      statsTable["ramDistance"] = statsTable["ramDistance"] + distanceTraveled
+    end
+  end
+
+  if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Ranged_DeployBomb") then
+    -- the upgrade to shoot 2 bombs makes it a 2-click weapon, which we handle under a different hook
+    logStatIncrement(1, "bombsCreated")
+    statsTable["bombsCreated"] = statsTable["bombsCreated"] + 1
+  end
+end
+
+local function handle2ClickSkillStart(mission, pawn, weaponId, p1, p2, p3)
+  -- LOG("handle2ClickSkillStart: " .. pawn:GetMechName() .. " is using " .. weaponId .. " at " .. p2:GetString() .. " and " .. p3:GetString())
+  if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Ranged_DeployBomb") then
+    logStatIncrement(2, "bombsCreated")
+    statsTable["bombsCreated"] = statsTable["bombsCreated"] + 2
   end
 end
 
 modapiext.events.onSkillStart:subscribe(handleSkillStart)
 modapiext.events.onQueuedSkillStart:subscribe(handleSkillStart)
+modapiext.events.onFinalEffectStart:subscribe(handle2ClickSkillStart)
 
 modApi.events.onMainMenuEntered:subscribe(function()
-  game = nil
   statsTable = nil
 end)
