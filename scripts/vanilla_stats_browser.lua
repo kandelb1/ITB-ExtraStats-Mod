@@ -43,18 +43,18 @@ local function getWeaponSurface(weaponId)
   return surface
 end
 
-local function getMechSurface(mechId, squadIndex)
+local function getMechSurface(mechId, colorIndex)
   local mech = _G[mechId]
   local animData = ANIMS[mech.Image]
   local surface = sdlext.getSurface({path = "img/" .. animData.Image})
   if surface == nil then
     return sdlext.getSurface({path = "img/weapons/placeholder_mech.png"})
   end
-  if squadIndex > 1 and squadIndex <= modApi.constants.VANILLA_SQUADS then
+  if colorIndex > 1 and colorIndex <= modApi.constants.VANILLA_SQUADS then
     local colorTable = {}
     for j = 1, #squadPalettes[1] do
       colorTable[(j - 1) * 2 + 1] = squadPalettes[1][j]
-      colorTable[(j - 1) * 2 + 2] = squadPalettes[squadIndex][j]
+      colorTable[(j - 1) * 2 + 2] = squadPalettes[colorIndex][j]
     end
     surface = sdl.colormapped(surface, colorTable)
   end
@@ -79,10 +79,9 @@ local function gameClicked(game, rightPane)
     local pilotKey = "pilot" .. i
     local weaponIndices = {(i * 2) + 1, (i * 2) + 2}
     local mechIndex = i + 1
-    local squadIndex = modApi:squadChoice2Index(game["squad"])
-    local color = game["colors"][i+1] -- TODO: use this color instead of the squad's color
+    local colorIndex = game["colors"][i+1] + 1
 
-    local mechSurface = getMechSurface(game["mechs"][mechIndex], squadIndex)
+    local mechSurface = getMechSurface(game["mechs"][mechIndex], colorIndex)
     local pilotSurface = getPilotSurface(game[pilotKey]["id"])
     local weapon1 = getWeaponSurface(game["weapons"][weaponIndices[1]])
     local weapon2 = getWeaponSurface(game["weapons"][weaponIndices[2]])
@@ -231,6 +230,9 @@ local function showStatsScreen(gameStats)
         surface = sdlext.getSurface({path = "img/units/placeholder_mech.png"})
       end
       local squadName = modApi.squad_text[squadIndex * 2 - 1] or "N/A"
+      -- modApi.squad_text doesn't contain text for random or custom squad, so gotta check manually
+      if game["squad"] == 8 then squadName = "Random Squad" end
+      if game["squad"] == 9 then squadName = "Custom Squad" end
       local score = game["score"]
       local bgColor = deco.colors.tooltipbg
       if game["victory"] then
