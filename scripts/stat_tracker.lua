@@ -13,6 +13,7 @@ local lightningWeaponDamageTable = {}
 local bomblingDamageTable = {}
 local prevGridHealth = nil
 local skipFireStat = false
+local defeated = false
 
 math.randomseed(os.time())
 local random = math.random
@@ -77,6 +78,7 @@ local function initializeStatsTable()
   stats["bombDamage"] = 0
 
   -- mist eaters
+  stats["tilesSmoked"] = 0
 
   -- cataclysm
   stats["tilesCracked"] = 0
@@ -85,10 +87,9 @@ local function initializeStatsTable()
 
   -- arachnophiles
   stats["spidersCreated"] = 0
-  stats["richocetDoubleKills"] = 0 -- incomplete
 
   -- heat sinkers
-  -- stats["boosts"] = 0 -- waiting for the next version of modapiext for the pawnIsBoosted hook
+  stats["boosts"] = 0 -- incomplete, waiting for the next version of modapiext for the pawnIsBoosted hook
   stats["unitsFired"] = 0
   stats["tilesFired"] = 0
   stats["fireDamage"] = 0 -- incomplete
@@ -97,7 +98,7 @@ local function initializeStatsTable()
   stats["ramDistance"] = 0
 
   -- OTHER
-  stats["squadId"] = -1
+  stats["squadIndex"] = 0
   stats["difficulty"] = -1
   stats["islandsSecured"] = 0
 
@@ -129,15 +130,9 @@ local function saveFinishedGameStats(gameId, victory, difficulty, islandsSecured
   )
 end
 
-modApi.events.onContinueClicked:subscribe(function() 
-  statsTable = loadCurrentStats()
-end)
-
 modApi.events.onMissionUpdate:subscribe(function()
   -- IsEvent() numbers come from ITB modding discord
   if Game:IsEvent(7) then -- grid damaged
-    -- TODO: if you take grid damage that causes you to lose the game, this event isn't fired
-    -- so maybe we need to manually add 1 to gridDamage when we lose?
     local currentGridHealth = Game:GetPower():GetValue()
     local damageTaken = prevGridHealth - currentGridHealth
     logStatIncrement(damageTaken, "gridDamage")
@@ -168,6 +163,7 @@ modApi.events.onMissionUpdate:subscribe(function()
     logStatIncrement(1, "attacksCancelled")
     statsTable["attacksCancelled"] = statsTable["attacksCancelled"] + 1
   end
+
 end)
 
 modApi.events.onPreStartGame:subscribe(function() 
@@ -177,7 +173,8 @@ modApi.events.onPreStartGame:subscribe(function()
 end)
 
 modApi.events.onPostStartGame:subscribe(function()
-  statsTable["squadId"] = GAME.additionalSquadData.squadIndex
+  LOG("Setting squad to " .. GAME.additionalSquadData.squadIndex)
+  statsTable["squadIndex"] = GAME.additionalSquadData.squadIndex
 end)
 
 -- this is fired on your first time loading into the game.
@@ -188,17 +185,13 @@ modapiext.events.onGameLoaded:subscribe(function(mission)
   prevGridHealth = Game:GetPower():GetValue()
 end)
 
+modApi.events.onContinueClicked:subscribe(function() 
+  statsTable = loadCurrentStats()
+  prevGridHealth = Game:GetPower():GetValue()
+end)
+
 -- this is fired a LOT
-modApi.events.onSaveGame:subscribe(function() 
-  -- RegionData is sometimes nil???
-  if RegionData then
-    statsTable["islandsSecured"] = 0
-    for i = 0, 3 do
-      if RegionData["island"..i].secured then
-        statsTable["islandsSecured"] = statsTable["islandsSecured"] + 1
-      end
-    end
-  end
+modApi.events.onSaveGame:subscribe(function()
   saveStats()
 end)
 
@@ -211,23 +204,16 @@ modApi.events.onMissionStart:subscribe(function(mission)
   prevGridHealth = Game:GetPower():GetValue()
 end)
 
--- fires on mission loss, and when you go to the main menu from a mission
-modApi.events.onMissionChanged:subscribe(function(mission)
-  if Game then -- prevent an error when going back to the main menu
-    if Game:GetPower():GetValue() <= 0 then -- GAME OVER
-      local gameId = uuid()
-      local difficulty = GetDifficulty()
-      -- RegionData is nil at this point so we can't do this
-      -- local islandsSecured = 0
-      -- for i = 0, 3 do
-      --   if GAME.RegionData["island"..i].secured then
-      --     islandsSecured = islandsSecured + 1
-      --   end
-      -- end
-      local timeFinished = os.time()
-      saveFinishedGameStats(gameId, false, difficulty, statsTable["islandsSecured"], timeFinished)
-    end  
-  end  
+-- TODO: test
+modApi.events.onGameStateChanged:subscribe(function(newState, oldState)
+  LOG("game state changing from " .. oldState .. " to " .. newState)
+  if oldState == GAME_STATE.ISLAND and newState == GAME_STATE.MAP then
+    LOG("ADDITIONAL ISLAND SECURED")
+    statsTable["islandsSecured"] = statsTable["islandsSecured"] + 1
+  end
+  if newState == GAME_STATE.HANGAR then
+    alreadyDefeated = false
+  end
 end)
 
 modapiext.events.onPawnIsFire:subscribe(function(mission, pawn, isFire)
@@ -367,18 +353,18 @@ local function checkEventForStats(pawn, weaponId, event)
     if event.iPush ~= DIR_NONE and event.iPush ~= DIR_FLIP and targetPawn then
       -- check if a vek is being pushed onto a valid space
       local endPoint = event.loc + DIR_VECTORS[event.iPush]
-      if targetPawn:IsEnemy() and not targetPawn:IsGuarding() and Board:IsValid(endPoint) then
+      if pawn:IsPlayer() and targetPawn:IsEnemy() and not targetPawn:IsGuarding() and Board:IsValid(endPoint) then
         logStatIncrement(1, "vekPushed")        
         statsTable["vekPushed"] = statsTable["vekPushed"] + 1
       end
     end
     if event.iDamage > 0 then
       if targetPawn then
-        if modApi:stringStartsWith(weaponId, "Prime_Lasermech") then
+        if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Prime_Lasermech") then
           beamWeaponDamageTable[targetPawn:GetId()] = true
         end
 
-        if modApi:stringStartsWith(weaponId, "Prime_Lightning") then
+        if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Prime_Lightning") then
           lightningWeaponDamageTable[targetPawn:GetId()] = true
         end
 
@@ -401,11 +387,11 @@ local function checkEventForStats(pawn, weaponId, event)
           statsTable["damageBlockedWithIce"] = statsTable["damageBlockedWithIce"] + event.iDamage
         end
 
-        if modApi:stringStartsWith(weaponId, "DeployUnit_SelfDamage") and pawn:GetId() ~= targetPawn:GetId() then
+        if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "DeployUnit_SelfDamage") and pawn:GetId() ~= targetPawn:GetId() then
           bomblingDamageTable[targetPawn:GetId()] = true
         end
 
-        if modApi:stringStartsWith(weaponId, "Ranged_Arachnoid") and event.bKO_Effect then -- could check with Board:IsDeadly() as well
+        if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Ranged_Arachnoid") and event.bKO_Effect then
           logStatIncrement(1, "spidersCreated")
           statsTable["spidersCreated"] = statsTable["spidersCreated"] + 1
         end
@@ -491,10 +477,25 @@ local function handle2ClickSkillStart(mission, pawn, weaponId, p1, p2, p3)
   end
 end
 
+modApi.events.onFrameDrawn:subscribe(function()
+  if not Game then return end
+  if defeated then return end
+
+  if Game:GetPower():GetValue() <= 0 then
+    defeated = true
+    local gameId = uuid()
+    local difficulty = GetDifficulty()
+    local time = os.time()
+    LOG("GAME OVER, difficulty is " .. difficulty .. " and we secured " .. statsTable["islandsSecured"] .. " islands")
+    saveFinishedGameStats(gameId, false, difficulty, statsTable["islandsSecured"], time)
+  end
+end)
+
 modapiext.events.onSkillStart:subscribe(handleSkillStart)
 modapiext.events.onQueuedSkillStart:subscribe(handleSkillStart)
 modapiext.events.onFinalEffectStart:subscribe(handle2ClickSkillStart)
 
 modApi.events.onMainMenuEntered:subscribe(function()
   statsTable = nil
+  defeated = false
 end)
