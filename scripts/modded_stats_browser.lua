@@ -1,30 +1,30 @@
+-- maps squad index (modloader-based indices) to labels we should display
 local squadSpecificLabels = {
-  -- TODO: double check these indices are correct
   -- rift walkers
   [1] = {
     ["punchDistance"] = "Distance Traveled with Punch",
   },
-  -- zenith guard
-  [2] = {
-    ["shields"] = "Shields Applied",
-    ["beamDamage"] = "Beam Weapon Damage",
-  },
-  -- steel judoka
-  [3] = {
-    ["vekSelfDamage"] = "Vek Self Damage",
-    ["vekSelfKills"] = "Vek Self Kills",
-  },
   -- rusting hulks
-  [4] = {
+  [2] = {
     ["tilesSmoked"] = "Tiles Smoked",
     ["attacksCancelled"] = "Attacks Cancelled",
     ["stormDamage"] = "Storm Damage (WIP)",
   },
+  -- zenith guard
+  [3] = {
+    ["shields"] = "Shields Applied",
+    ["beamDamage"] = "Beam Weapon Damage",
+  },
   -- blitzkrieg
-  [5] = {
+  [4] = {
     ["lightningDamage"] = "Lightning Weapon Damage",
     ["lightningSelfDamage"] = "Lightning Weapon Self Damage",
     ["rocksLaunched"] = "Rocks Launched",
+  },
+  -- steel judoka
+  [5] = {
+    ["vekSelfDamage"] = "Vek Self Damage",
+    ["vekSelfKills"] = "Vek Self Kills",
   },
   -- flame behemoths
   [6] = {
@@ -41,36 +41,36 @@ local squadSpecificLabels = {
   [8] = {
     ["leapDistance"] = "Distance Traveled With Leap"
   },
-  -- bombermechs
+  -- secret squad
   [9] = {
+    ["ramDistance"] = "Distance Traveled with Ram"
+  },
+  -- bombermechs
+  [10] = {
     ["bombsCreated"] = "Bombs Created",
     ["bombDamage"] = "Bomb Damage",
   },
-  -- mist eaters
-  [10] = {
-    -- NADA
-  },
-  -- cataclysm
-  [11] = {
-    ["tilesCracked"] = "Tiles Cracked",
-    ["tilesDestroyed"] = "Tiles Destroyed",
-    ["vekPitted"] = "Vek Pitted",
-  },
   -- arachnophiles
-  [12] = {
+  [11] = {
     ["spidersCreated"] = "Spiders Created",
-    -- ["richochetDoubleKills"] = "Richochet Weapon Double Kills (WIP)"
+    -- ["spiderDamage"] = "Spider Damage (WIP)"
+  },
+  -- mist eaters
+  [12] = {
+    ["tilesSmoked"] = "Tiles Smoked"
   },
   -- heat sinkers
   [13] = {
+    ["boosts"] = "Mech Boosts (WIP)",
     ["unitsFired"] = "Units Set on Fire",
     ["tilesFired"] = "Tiles Set on Fire",
-    ["boosts"] = "Mech Boosts (WIP)",
     ["fireDamage"] = "Fire Damage (WIP)",
   },
-  -- secret squad
+  -- cataclysm
   [14] = {
-    -- NADA
+    ["tilesCracked"] = "Tiles Cracked",
+    ["tilesDestroyed"] = "Tiles Destroyed",
+    ["vekPitted"] = "Vek Pitted",
   },
 }
 
@@ -80,6 +80,8 @@ local MEDAL_SMALL = {W = 25, H = 34}
 local MEDAL_SURFACES = {[2] = sdlext.getSurface({path = "img/ui/hangar/victory_2.png"}),
                         [3] = sdlext.getSurface({path = "img/ui/hangar/victory_3.png"}),
                         [4] = sdlext.getSurface({path = "img/ui/hangar/victory_4.png"})}
+local defeatTextset = deco.textset(sdl.rgb(255, 0, 0), deco.colors.black, 2, false)
+local victoryTextset = deco.textset(sdl.rgb(0, 255, 0), deco.colors.black, 2, false)
 
 -- gets the list of previous games from modcontent.lua. games are sorted by date from oldest-newest by default
 local function fetchGameHistory()
@@ -142,15 +144,17 @@ local function showGameStatsInRightPane(statsTable, rightPane)
   createGeneralLabel("Damage Taken", "damageTaken")
   createGeneralLabel("Self Damage", "selfDamage")
   createGeneralLabel("Healing", "healing")  
+  createGeneralLabel("Grid Damage Taken", "gridDamage")
+  createGeneralLabel("Grid Resists", "gridResists")
   createGeneralLabel("Vek Pushed", "vekPushed")
   createGeneralLabel("Vek Spawns Blocked", "vekBlocked")
   createGeneralLabel("Vek Drowned", "vekDrowned")
-  createGeneralLabel("Vek Pitted", "vekPitted")
 
-  for k, v in pairs(squadSpecificLabels[statsTable.squadId]) do
-    createSquadSpecificLabel(v, k)    
+  if squadSpecificLabels[statsTable["squadIndex"]] then -- random/custom squads have a squadIndex of -1. There are no labels for them.
+    for k, v in pairs(squadSpecificLabels[statsTable["squadIndex"]]) do
+      createSquadSpecificLabel(v, k)    
+    end
   end
-  
 end
 
 local function showGameHistoryWindow()
@@ -193,17 +197,17 @@ local function showGameHistoryWindow()
     -- TODO: implement sorting by other stats, like score/kills/damage
     for i = #games, 1, -1 do
       local game = games[i]
-      local squadId = game["squadId"]
-      local path = modApi.squad_icon[squadId]
+      local squadIndex = game["squadIndex"]
+      local path = modApi.squad_icon[squadIndex]
       local surface
       if path ~= nil then
         -- LOG(path)
         surface = sdlext.getSurface({path = path})
-        if squadId > 1 and squadId <= modApi.constants.VANILLA_SQUADS then
+        if squadIndex > 1 and squadIndex <= modApi.constants.VANILLA_SQUADS then
           local colorTable = {}
           for j = 1, #squadPalettes[1] do
             colorTable[(j - 1) * 2 + 1] = squadPalettes[1][j]
-            colorTable[(j - 1) * 2 + 2] = squadPalettes[squadId][j]
+            colorTable[(j - 1) * 2 + 2] = squadPalettes[squadIndex][j]
           end
           surface = sdl.colormapped(surface, colorTable)
         end      
@@ -259,14 +263,18 @@ local function showGameHistoryWindow()
         :addTo(right)
       
       local victoryText = "Defeat"
-      if game.victory then victoryText = "Victory!" end
+      local textset = defeatTextset
+      if game.victory then 
+        victoryText = "Victory!" 
+        textset = victoryTextset 
+      end
       Ui()
         :width(0.5):heightpx(15)
         :decorate({
           -- DecoFrame(bgColor, deco.colors.debugGreen, 2),
           -- DecoAlign(0, 0),
           DecoCAlign(),
-          DecoText(victoryText)
+          DecoText(victoryText, nil, textset)
         })
         :anchorH("center")
         :addTo(right)

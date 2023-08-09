@@ -8,6 +8,10 @@ local MEDAL_SURFACES = {[2] = sdlext.getSurface({path = "img/ui/hangar/victory_2
                         [3] = sdlext.getSurface({path = "img/ui/hangar/victory_3.png"}),
                         [4] = sdlext.getSurface({path = "img/ui/hangar/victory_4.png"})}
 local PILOT_PORTRAIT_SIZE = {W = 61, H = 61}
+local defeatTextset = deco.textset(sdl.rgb(255, 0, 0), deco.colors.black, 2, false)
+local victoryTextset = deco.textset(sdl.rgb(0, 255, 0), deco.colors.black, 2, false)
+local selectedButton = nil
+
 
 local function fetchGameHistory()
   local path = GetSavedataLocation() .. "profile_" .. Settings.last_profile .. "/profile.lua"
@@ -121,7 +125,7 @@ local function gameClicked(game, rightPane)
     Ui()
       :widthpx(80):height(1)
       :decorate({
-        DecoText("Victory!")
+        DecoText("Victory!", nil, victoryTextset)
       })
       :addTo(victoryContainer)
     Ui()
@@ -136,7 +140,7 @@ local function gameClicked(game, rightPane)
     Ui()
     :heightpx(15)
     :decorate({
-      DecoText("Defeat")
+      DecoText("Defeat", nil, defeatTextset)
     })
     :addTo(rightPane.otherStats)
   end  
@@ -250,8 +254,12 @@ local function showStatsScreen(gameStats)
         :addTo(gameHistory)
       buttonBox.gameId = "score" .. i
       buttonBox.onclicked = function(self, button)
-        LOG(self.gameId .. " CLICKED!")
-        gameClicked(gameStats[self.gameId], rightPane)
+        gameClicked(gameStats[self.gameId], rightPane)        
+        if selectedButton then -- reset border of previously selected button
+          selectedButton.decorations[2].bordercolor = deco.colors.buttonborder
+        end
+        buttonBox.decorations[2].bordercolor = deco.colors.buttonborderhl -- highlight this button
+        selectedButton = buttonBox
         return true
       end
       
@@ -277,15 +285,22 @@ local function showStatsScreen(gameStats)
 
       -- show squad name
       Ui()
-      :width(1):heightpx(15)
-      :decorate({
-        DecoText(squadName)
-      })
-      :anchorH("center")
-      :addTo(right)
+        :width(1):heightpx(15)
+        :decorate({
+          DecoText(squadName)
+        })
+        :anchorH("center")
+        :addTo(right)
 
-      -- show a medal if this game was a victory
-      if game["victory"] then
+      -- show score
+      Ui()
+        :width(1):heightpx(15)
+        :decorate({
+          DecoText("Score: " .. score)
+        })
+        :addTo(right)
+
+      if game["victory"] then -- display a medal if this game was a victory
         Ui()
           :widthpx(MEDAL_SMALL.W):heightpx(MEDAL_SMALL.H)
           :decorate({
@@ -294,15 +309,14 @@ local function showStatsScreen(gameStats)
           })
           :clip()
           :addTo(right)
+      else -- otherwise display 'Defeat'
+        Ui()
+          :heightpx(15)
+          :decorate({            
+            DecoText("Defeat", nil, defeatTextset)
+          })
+          :addTo(right)
       end
-
-      -- show score
-      Ui()
-      :width(1):heightpx(15)
-      :decorate({
-        DecoText("Score: " .. score)
-      })
-      :addTo(right)
 
       i = i + 1
       game = gameStats["score" .. i]
