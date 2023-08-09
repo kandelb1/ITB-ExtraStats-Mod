@@ -47,8 +47,8 @@ local squadSpecificLabels = {
   },
   -- bombermechs
   [10] = {
-    ["bombsCreated"] = "Bombs Created",
-    ["bombDamage"] = "Bomb Damage",
+    ["bombsCreated"] = "Bomblings Created",
+    ["bombDamage"] = "Bombling Damage",
   },
   -- arachnophiles
   [11] = {
