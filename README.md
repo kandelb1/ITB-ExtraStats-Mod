@@ -9,6 +9,7 @@ Also adds an additional Vanilla Stats Browser.
 ## Features
 
 Extra Stats adds two new buttons to the Mod Content menu:
+
 <img src="repository-resources/new_buttons.png" height="350" />
 
 ### Vanilla Stats Browser
