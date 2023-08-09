@@ -180,7 +180,6 @@ end)
 -- this is fired on your first time loading into the game.
 -- interestingly, if you go back to the main menu and then click 'continue', it won't fire
 modapiext.events.onGameLoaded:subscribe(function(mission)
-  LOG("LOADING INTO GAME")
   statsTable = loadCurrentStats()
   prevGridHealth = Game:GetPower():GetValue()
 end)
@@ -206,13 +205,11 @@ end)
 
 -- TODO: test
 modApi.events.onGameStateChanged:subscribe(function(newState, oldState)
-  LOG("game state changing from " .. oldState .. " to " .. newState)
   if oldState == GAME_STATE.ISLAND and newState == GAME_STATE.MAP then
-    LOG("ADDITIONAL ISLAND SECURED")
     statsTable["islandsSecured"] = statsTable["islandsSecured"] + 1
   end
   if newState == GAME_STATE.HANGAR then
-    alreadyDefeated = false
+    defeated = false
   end
 end)
 
