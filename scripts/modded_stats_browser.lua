@@ -82,6 +82,7 @@ local MEDAL_SURFACES = {[2] = sdlext.getSurface({path = "img/ui/hangar/victory_2
                         [4] = sdlext.getSurface({path = "img/ui/hangar/victory_4.png"})}
 local defeatTextset = deco.textset(sdl.rgb(255, 0, 0), deco.colors.black, 2, false)
 local victoryTextset = deco.textset(sdl.rgb(0, 255, 0), deco.colors.black, 2, false)
+local selectedButton = nil
 
 -- gets the list of previous games from modcontent.lua. games are sorted by date from oldest-newest by default
 local function fetchGameHistory()
@@ -228,7 +229,15 @@ local function showGameHistoryWindow()
         DecoButton(),
       })
       :addTo(gameHistory)
-      buttonBox.onclicked = function() showGameStatsInRightPane(game, rightPane) return true end
+      buttonBox.onclicked = function() 
+        showGameStatsInRightPane(game, rightPane) 
+        if selectedButton then -- reset border of previously selected button
+          selectedButton.decorations[2].bordercolor = deco.colors.buttonborder
+        end
+        buttonBox.decorations[2].bordercolor = deco.colors.buttonborderhl -- highlight this button
+        selectedButton = buttonBox
+        return true
+      end
 
       local left = UiWeightLayout()
       :width(0.4)
