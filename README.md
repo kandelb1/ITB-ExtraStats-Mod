@@ -1,6 +1,6 @@
 # ITB Extra Stats
 
-Record extra stats for your runs and view all previous runs with the Modded Stats Browser.
+Record extra stats for your runs and view all previous runs with the Extra Stats Browser.
 
 Also adds an additional Vanilla Stats Browser.
 
@@ -18,7 +18,7 @@ Ever been disappointed that ITB will only show you the top 5 scores for each of 
 <img src="repository-resources/vanilla_stats_browser.png" />
 Scroll through all of your past runs, sorted by score. Click on a game in the list to see your loadout and stats.
 
-### Extra Stats & Modded Stats Browser
+### Extra Stats & Extra Stats Browser
 
 Extra Stats currently records the following stats, separated into two categories:
 
@@ -79,7 +79,7 @@ Extra Stats currently records the following stats, separated into two categories
 - - Tiles Destroyed *(cracked tiles turned into holes)*
 - - Vek Pitted *(vek killed via falling into hole)*
 
-Whenever you lose or win a run, extra stats will save your stats to be viewed back at a later time via the *Modded Stats Browser*.
+Whenever you lose or win a run, extra stats will save your stats to be viewed back at a later time via the *Extra Stats Browser*.
 <img src="repository-resources/modded_stats_browser.png" />
 Scroll through the list and click on a game to view your extra stats.
 
