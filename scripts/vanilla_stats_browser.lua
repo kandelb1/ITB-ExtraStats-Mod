@@ -36,6 +36,15 @@ local function getPilotSurface(pilotId)
   return surface
 end
 
+local function getPilotDescription(pilotId)
+  local pilot = _G[pilotId]
+  local key = GetSkillInfo(pilot.Skill).desc
+  if not key or key == "" then
+    key = "Hangar_NoAbility"
+  end
+  return GetText(key)
+end
+
 local function getWeaponSurface(weaponId)
   if weaponId == "" then return nil end
   local weapon = _G[weaponId]
@@ -100,12 +109,13 @@ local function gameClicked(game, rightPane)
     local weapon2Id = game["weapons"][weaponIndices[2]]
     local weapon1Surface = getWeaponSurface(weapon1Id)
     local weapon2Surface = getWeaponSurface(weapon2Id)
-    Ui()
+    local pilot = Ui()
       :width(0.2):height(1)
       :decorate({
         DecoSurface(pilotSurface)
       })
       :addTo(container)
+    pilot:settooltip(getPilotDescription(game[pilotKey]["id"]), game[pilotKey]["name"])
     local mech = Ui()
       :width(0.2):height(1)
       :decorate({
@@ -119,14 +129,14 @@ local function gameClicked(game, rightPane)
         DecoSurface(weapon1Surface)
       })
       :addTo(container)
-    wep1:settooltip(getWeaponKey(weapon1Id, "Description"), getWeaponKey(weapon1Id, "Name"), nil)
+    wep1:settooltip(getWeaponKey(weapon1Id, "Description"), getWeaponKey(weapon1Id, "Name"))
     local wep2 = Ui()
       :width(0.2):height(1)
       :decorate({
         DecoSurface(weapon2Surface)
       })
       :addTo(container)
-    wep2:settooltip(getWeaponKey(weapon2Id, "Description"), getWeaponKey(weapon2Id, "Name"), nil)
+    wep2:settooltip(getWeaponKey(weapon2Id, "Description"), getWeaponKey(weapon2Id, "Name"))
   end
 
   rightPane.otherStats:detach()
