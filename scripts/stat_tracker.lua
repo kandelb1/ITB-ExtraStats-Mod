@@ -131,6 +131,7 @@ local function saveFinishedGameStats(gameId, victory, difficulty, islandsSecured
 end
 
 modApi.events.onMissionUpdate:subscribe(function()
+  if IsTestMechScenario() then return end
   -- IsEvent() numbers come from ITB modding discord
   if Game:IsEvent(7) then -- grid damaged
     local currentGridHealth = Game:GetPower():GetValue()
@@ -214,6 +215,7 @@ modApi.events.onGameStateChanged:subscribe(function(newState, oldState)
 end)
 
 modapiext.events.onPawnIsFire:subscribe(function(mission, pawn, isFire)
+  if IsTestMechScenario() then return end
   if isFire then
     logStatIncrement(1, "unitsFired")
     statsTable["unitsFired"] = statsTable["unitsFired"] + 1
@@ -221,6 +223,7 @@ modapiext.events.onPawnIsFire:subscribe(function(mission, pawn, isFire)
 end)
 
 modapiext.events.onPawnIsFrozen:subscribe(function(mission, pawn, isFrozen)
+  if IsTestMechScenario() then return end
   if isFrozen then
     logStatIncrement(1, "unitsFrozen")
     statsTable["unitsFrozen"] = statsTable["unitsFrozen"] + 1
@@ -228,6 +231,7 @@ modapiext.events.onPawnIsFrozen:subscribe(function(mission, pawn, isFrozen)
 end)
 
 modapiext.events.onPawnIsShielded:subscribe(function(mission, pawn, isShield)
+  if IsTestMechScenario() then return end
   -- TODO: why make the distinction between player and enemy? we don't for fire or freeze
   if isShield and pawn:IsPlayer() then -- if a player unit gained a shield (we handle buildings later)
     logStatIncrement(1, "shields")
@@ -244,6 +248,7 @@ end)
 -- end)
 
 modapiext.events.onPawnDamaged:subscribe(function(mission, pawn, damageTaken)
+  if IsTestMechScenario() then return end
   if pawn:IsEnemy() then
     logStatIncrement(damageTaken, "damageDealt")
     statsTable["damageDealt"] = statsTable["damageDealt"] + damageTaken
@@ -287,6 +292,7 @@ modapiext.events.onPawnDamaged:subscribe(function(mission, pawn, damageTaken)
 end)
 
 modapiext.events.onPawnHealed:subscribe(function(mission, pawn, healingTaken)
+  if IsTestMechScenario() then return end
   if pawn:IsPlayer() then
     logStatIncrement(healingTaken, "healing")
     statsTable["healing"] = statsTable["healing"] + healingTaken
@@ -294,6 +300,7 @@ modapiext.events.onPawnHealed:subscribe(function(mission, pawn, healingTaken)
 end)
 
 modapiext.events.onPawnKilled:subscribe(function(mission, pawn)
+  if IsTestMechScenario() then return end
   if pawn:IsEnemy() then
     logStatIncrement(1, "kills")
     statsTable["kills"] = statsTable["kills"] + 1
@@ -413,7 +420,7 @@ end
 local function handleSkillStart(mission, pawn, weaponId, p1, p2)
   -- LOG("handleSkillStart: " .. pawn:GetMechName() .. " is using weaponId " .. weaponId)
   local fx = _G[weaponId]:GetSkillEffect(p1, p2)
-  if modapiext.weapon:isTipImage() then return end -- don't record stats when playing animated tooltips!
+  if modapiext.weapon:isTipImage() or IsTestMechScenario() then return end -- don't record stats when playing animated tooltips or in the testing scenario
   
   -- loop through effects, which are typically player attacks
   for eventIndex = 1, fx.effect:size() do
@@ -469,7 +476,7 @@ end
 
 local function handle2ClickSkillStart(mission, pawn, weaponId, p1, p2, p3)
   -- LOG("handle2ClickSkillStart: " .. pawn:GetMechName() .. " is using " .. weaponId .. " at " .. p2:GetString() .. " and " .. p3:GetString())
-  if modapiext.weapon:isTipImage() then return end -- don't record stats when playing animated tooltips!
+  if modapiext.weapon:isTipImage() or IsTestMechScenario() then return end -- don't record stats when playing animated tooltips or in the testing scenario
   if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Ranged_DeployBomb") then
     logStatIncrement(2, "bombsCreated")
     statsTable["bombsCreated"] = statsTable["bombsCreated"] + 2
