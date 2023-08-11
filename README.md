@@ -16,7 +16,7 @@ Extra Stats adds two new buttons to the Mod Content menu:
 
 Ever been disappointed that ITB will only show you the top 5 scores for each of your squads? Now you can view ALL of your previous runs.
 <img src="repository-resources/vanilla_stats_browser.png" />
-Scroll through all of your past runs, sorted by score. Click on a game in the list to see your loadout and stats.
+Scroll through all of your past runs, sorted by score. Click on a game in the list to see your loadout and stats. Mouse over pilots and weapons to see their names and descriptions.
 
 ### Extra Stats & Extra Stats Browser
 
@@ -80,7 +80,7 @@ Extra Stats currently records the following stats, separated into two categories
 - - Vek Pitted *(vek killed via falling into hole)*
 
 Whenever you lose or win a run, extra stats will save your stats to be viewed back at a later time via the *Extra Stats Browser*.
-<img src="repository-resources/modded_stats_browser.png" />
+<img src="repository-resources/extra_stats_browser.png" />
 Scroll through the list and click on a game to view your extra stats.
 
 
