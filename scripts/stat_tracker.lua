@@ -413,6 +413,7 @@ end
 local function handleSkillStart(mission, pawn, weaponId, p1, p2)
   -- LOG("handleSkillStart: " .. pawn:GetMechName() .. " is using weaponId " .. weaponId)
   local fx = _G[weaponId]:GetSkillEffect(p1, p2)
+  if modapiext.weapon:isTipImage() then return end -- don't record stats when playing animated tooltips!
   
   -- loop through effects, which are typically player attacks
   for eventIndex = 1, fx.effect:size() do
@@ -468,6 +469,7 @@ end
 
 local function handle2ClickSkillStart(mission, pawn, weaponId, p1, p2, p3)
   -- LOG("handle2ClickSkillStart: " .. pawn:GetMechName() .. " is using " .. weaponId .. " at " .. p2:GetString() .. " and " .. p3:GetString())
+  if modapiext.weapon:isTipImage() then return end -- don't record stats when playing animated tooltips!
   if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Ranged_DeployBomb") then
     logStatIncrement(2, "bombsCreated")
     statsTable["bombsCreated"] = statsTable["bombsCreated"] + 2
