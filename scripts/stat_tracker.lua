@@ -187,7 +187,6 @@ end)
 
 modApi.events.onContinueClicked:subscribe(function() 
   statsTable = loadCurrentStats()
-  prevGridHealth = Game:GetPower():GetValue()
 end)
 
 -- this is fired a LOT
@@ -204,13 +203,15 @@ modApi.events.onMissionStart:subscribe(function(mission)
   prevGridHealth = Game:GetPower():GetValue()
 end)
 
--- TODO: test
 modApi.events.onGameStateChanged:subscribe(function(newState, oldState)
   if oldState == GAME_STATE.ISLAND and newState == GAME_STATE.MAP then
     statsTable["islandsSecured"] = statsTable["islandsSecured"] + 1
   end
   if newState == GAME_STATE.HANGAR then
     defeated = false
+  end
+  if oldState == GAME_STATE.MAIN_MENU and (newState == GAME_STATE.MAP or newState == GAME_STATE.ISLAND or newState == GAME_STATE.MISSION) then
+    prevGridHealth = Game:GetPower():GetValue()
   end
 end)
 
