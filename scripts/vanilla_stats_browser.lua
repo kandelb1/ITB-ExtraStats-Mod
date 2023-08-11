@@ -7,8 +7,6 @@ local MEDAL_SMALL = {W = 25, H = 34}
 local MEDAL_SURFACES = {[2] = sdlext.getSurface({path = "img/ui/hangar/victory_2.png"}),
                         [3] = sdlext.getSurface({path = "img/ui/hangar/victory_3.png"}),
                         [4] = sdlext.getSurface({path = "img/ui/hangar/victory_4.png"})}
-local PILOT_PORTRAIT_SIZE = {W = 61, H = 61}
-local MECH_SURFACE_SIZE = {W = 88, H = 68}
 local defeatTextset = deco.textset(sdl.rgb(255, 0, 0), deco.colors.black, 2, false)
 local victoryTextset = deco.textset(sdl.rgb(0, 255, 0), deco.colors.black, 2, false)
 local selectedButton = nil
@@ -46,6 +44,12 @@ local function getWeaponSurface(weaponId)
     return sdlext.getSurface({path = "img/weapons/placeholder_weapon.png"})
   end
   return surface
+end
+
+local function getWeaponKey(weaponId, key)
+  local textId = weaponId:match("^(.-)_?A?B?$") .. "_" .. key
+  if IsLocalizedText(textId) then return GetLocalizedText(textId) end
+  return _G[weaponId] and _G[weaponId][key] or "N/A"
 end
 
 local function getMechSurface(mechId, colorIndex)
@@ -92,52 +96,37 @@ local function gameClicked(game, rightPane)
 
     local mechSurface = getMechSurface(game["mechs"][mechIndex], colorIndex)
     local pilotSurface = getPilotSurface(game[pilotKey]["id"])
-    local weapon1 = getWeaponSurface(game["weapons"][weaponIndices[1]])
-    local weapon2 = getWeaponSurface(game["weapons"][weaponIndices[2]])
+    local weapon1Id = game["weapons"][weaponIndices[1]]
+    local weapon2Id = game["weapons"][weaponIndices[2]]
+    local weapon1Surface = getWeaponSurface(weapon1Id)
+    local weapon2Surface = getWeaponSurface(weapon2Id)
     Ui()
       :width(0.2):height(1)
-      -- :sizepx(PILOT_PORTRAIT_SIZE.W, PILOT_PORTRAIT_SIZE.H)
       :decorate({
-        -- DecoFrame(sdl.rgba(0, 0, 0, 0), deco.colors.debugRed),
         DecoSurface(pilotSurface)
       })
       :addTo(container)
     local mech = Ui()
       :width(0.2):height(1)
       :decorate({
-        -- DecoFrame(sdl.rgba(0, 0, 0, 0), deco.colors.debugGreen),
         DecoSurfaceOutlined(mechSurface)
       })
       :addTo(container)
     mech.ignoreMouse = true
-    Ui()
+    local wep1 = Ui()
       :width(0.2):height(1)
       :decorate({
-        -- DecoFrame(sdl.rgba(0, 0, 0, 0), deco.colors.debugBlue),
-        DecoSurface(weapon1)
+        DecoSurface(weapon1Surface)
       })
       :addTo(container)
-    Ui()
+    wep1:settooltip(getWeaponKey(weapon1Id, "Description"), getWeaponKey(weapon1Id, "Name"), nil)
+    local wep2 = Ui()
       :width(0.2):height(1)
       :decorate({
-        -- DecoFrame(sdl.rgba(0, 0, 0, 0), deco.colors.debugBlue),
-        DecoSurface(weapon2)
+        DecoSurface(weapon2Surface)
       })
       :addTo(container)
-    -- local images = Ui()
-    --   :sizepx(PILOT_PORTRAIT_SIZE.W, PILOT_PORTRAIT_SIZE.H)
-    --   :decorate({        
-    --     DecoSurface(pilotSurface),
-    --     DecoAlign(5, 0),
-    --     DecoSurfaceOutlined(mechSurface),
-    --     DecoAlign(5, 0),
-    --     DecoSurface(weapon1),
-    --     DecoAlign(5, 0),
-    --     DecoSurface(weapon2),
-    --   })
-    --   :addTo(container)
-    -- images.ignoreMouse = true
-    
+    wep2:settooltip(getWeaponKey(weapon2Id, "Description"), getWeaponKey(weapon2Id, "Name"), nil)
   end
 
   rightPane.otherStats:detach()
