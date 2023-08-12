@@ -82,6 +82,65 @@ end
 
 -- update the right side of the window with the loadout used, score, kills, etc.
 local function gameClicked(game, rightPane)
+  rightPane.otherStats:detach()
+  rightPane.otherStats = UiWeightLayout()
+    :width(1):height(0.2)
+    :orientation(false):vgap(5)
+    :addTo(rightPane)
+  rightPane.otherStats.padt = 10
+
+  local kills = game["kills"]
+  local score = game["score"]
+  local failedObjectives = game["failures"]
+  local gameLength = game["time"] -- I have no idea how they are converting this value into the format you see in the normal statistics page
+  local victory = game["victory"]
+
+  if victory then
+    local victoryContainer = UiWeightLayout()
+      :width(1):heightpx(MEDAL_SMALL.H)
+      :hgap(1)
+      :addTo(rightPane.otherStats)
+    Ui()
+      :widthpx(80):height(1)
+      :decorate({
+        DecoText("Victory!", nil, victoryTextset)
+      })
+      :addTo(victoryContainer)
+    Ui()
+      :widthpx(MEDAL_SMALL.W):heightpx(MEDAL_SMALL.H)
+      :decorate({
+        DecoAlign(MEDAL_X_OFFSETS[game["difficulty"] + 1], 0),
+        DecoSurface(MEDAL_SURFACES[game["islands"]])
+      })
+      :clip()
+      :addTo(victoryContainer)
+  else
+    Ui()
+    :heightpx(15)
+    :decorate({
+      DecoText("Defeat", nil, defeatTextset)
+    })
+    :addTo(rightPane.otherStats)
+  end  
+  Ui()
+    :heightpx(15)
+    :decorate({
+      DecoText("Score: " .. score)
+    })
+    :addTo(rightPane.otherStats)
+  Ui()
+    :heightpx(15)
+    :decorate({
+      DecoText("Kills: " .. kills)
+    })
+    :addTo(rightPane.otherStats)
+  Ui()
+    :heightpx(15)
+    :decorate({
+      DecoText("Failed Objectives: " .. failedObjectives)
+    })
+    :addTo(rightPane.otherStats)
+
   rightPane.loadout:detach()
   rightPane.loadout = UiWeightLayout()
     :width(1):height(0.5)
@@ -138,65 +197,6 @@ local function gameClicked(game, rightPane)
       :addTo(container)
     wep2:settooltip(getWeaponKey(weapon2Id, "Description"), getWeaponKey(weapon2Id, "Name"))
   end
-
-  rightPane.otherStats:detach()
-  rightPane.otherStats = UiWeightLayout()
-    :width(1):height(0.5)
-    :orientation(false):vgap(5)
-    :addTo(rightPane)
-
-  local kills = game["kills"]
-  local score = game["score"]
-  local failedObjectives = game["failures"]
-  local gameLength = game["time"] -- I have no idea how they are converting this value into the format you see in the normal statistics page
-  local victory = game["victory"]
-
-  if victory then
-    local victoryContainer = UiWeightLayout()
-      :width(1):heightpx(MEDAL_SMALL.H)
-      :hgap(1)
-      :addTo(rightPane.otherStats)
-    Ui()
-      :widthpx(80):height(1)
-      :decorate({
-        DecoText("Victory!", nil, victoryTextset)
-      })
-      :addTo(victoryContainer)
-    Ui()
-      :widthpx(MEDAL_SMALL.W):heightpx(MEDAL_SMALL.H)
-      :decorate({
-        DecoAlign(MEDAL_X_OFFSETS[game["difficulty"] + 1], 0),
-        DecoSurface(MEDAL_SURFACES[game["islands"]])
-      })
-      :clip()
-      :addTo(victoryContainer)
-  else
-    Ui()
-    :heightpx(15)
-    :decorate({
-      DecoText("Defeat", nil, defeatTextset)
-    })
-    :addTo(rightPane.otherStats)
-  end  
-  Ui()
-    :heightpx(15)
-    :decorate({
-      DecoText("Score: " .. score)
-    })
-    :addTo(rightPane.otherStats)
-  Ui()
-    :heightpx(15)
-    :decorate({
-      DecoText("Kills: " .. kills)
-    })
-    :addTo(rightPane.otherStats)
-  Ui()
-    :heightpx(15)
-    :decorate({
-      DecoText("Failed Objectives: " .. failedObjectives)
-    })
-    :addTo(rightPane.otherStats)
-
 end
 
 local function showStatsScreen(gameStats)
@@ -242,14 +242,14 @@ local function showStatsScreen(gameStats)
       :width(0.66):height(1)
       :orientation(false):vgap(10)
       :addTo(box)
+    rightPane.otherStats = UiWeightLayout()
+      :width(1):height(0.2)
+      :orientation(false):vgap(5)
+      :padding(20)
+      :addTo(rightPane)
     rightPane.loadout = UiWeightLayout()
       :width(1):height(0.5)
       :orientation(false):vgap(10)
-      :addTo(rightPane)
-    rightPane.otherStats = UiWeightLayout()
-      :width(1):height(0.5)
-      :orientation(false):vgap(5)
-      :padding(20)
       :addTo(rightPane)
     
     local gameHistory = UiBoxLayout()    
