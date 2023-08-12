@@ -209,6 +209,16 @@ local function showStatsScreen(gameStats)
       compactW = true,
       compactH = true,
     })
+    frame:addTo(ui):pospx((ui.w - frame.w) / 2, (ui.h - frame.h) / 2 - 0.05 * ScreenSizeY())
+    if not gameStats["score0"] then -- there aren't any games in the list
+      Ui()
+        :decorate({          
+          DecoAlign((maxW / 2) - 160, -maxH / 2),
+          DecoText("No games available.", deco.uifont.title.font, deco.uifont.title.set)
+        })
+        :addTo(frame)
+      return
+    end
     
     local box = UiWeightLayout()
       :orientation(true) -- horizontal
@@ -356,8 +366,6 @@ local function showStatsScreen(gameStats)
       game = gameStats["score" .. i]
     end
     LOG("LOOP OVER")
-
-    frame:addTo(ui):pospx((ui.w - frame.w) / 2, (ui.h - frame.h) / 2 - 0.05 * ScreenSizeY())
   end)
 end
 
