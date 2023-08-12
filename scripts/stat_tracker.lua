@@ -108,11 +108,11 @@ local function initializeStatsTable()
 end
 
 local function loadCurrentStats()
-  return modApi:readModData("current")
+  return modApi:readProfileData("current") or initializeStatsTable() -- in the rare case that someone installs the mod and continues a current run
 end
 
 local function saveStats()
-  modApi:writeModData("current", statsTable)
+  modApi:writeProfileData("current", statsTable)
 end
 
 local function saveFinishedGameStats(gameId, victory, difficulty, islandsSecured, timeFinished)
@@ -123,9 +123,9 @@ local function saveFinishedGameStats(gameId, victory, difficulty, islandsSecured
   statsTable["islandsSecured"] = islandsSecured
   statsTable["timeFinished"] = timeFinished
   sdlext.config(
-    "modcontent.lua",
+    modApi:getCurrentProfilePath() .. "modcontent.lua",
     function(obj)
-      -- obj["finishedGames"] SHOULD always exist (see init.lua)
+      if not obj["finishedGames"] then obj["finishedGames"] = {} end
       local index = #obj["finishedGames"] + 1
       obj["finishedGames"][index] = statsTable
     end

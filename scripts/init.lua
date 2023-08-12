@@ -8,16 +8,6 @@ local function metadata(self)
 end
 
 local function init(self, options)
-  -- create our finishedGames entry in modcontent.lua, if it doesn't exist already
-  sdlext.config(
-    "modcontent.lua",
-    function(obj)
-      if not obj["finishedGames"] then
-        obj["finishedGames"] = {}
-        LOG("Created finishedGames entry in modcontent.lua")
-      end
-    end
-  )
   require(self.scriptPath .. "vanilla_stats_browser")
   require(self.scriptPath .. "modded_stats_browser")
   require(self.scriptPath .. "stat_tracker")

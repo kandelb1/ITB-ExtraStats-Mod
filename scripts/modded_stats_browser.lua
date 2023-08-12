@@ -74,6 +74,7 @@ local squadSpecificLabels = {
   },
 }
 
+local squadPalettes = sdlext.squadPalettes()
 -- Medal spritesheet x offsets for # of islands secured
 local MEDAL_X_OFFSETS = {-25, -50, -75, -100}
 local MEDAL_SMALL = {W = 25, H = 34}
@@ -84,9 +85,9 @@ local defeatTextset = deco.textset(sdl.rgb(255, 0, 0), deco.colors.black, 2, fal
 local victoryTextset = deco.textset(sdl.rgb(0, 255, 0), deco.colors.black, 2, false)
 local selectedButton = nil
 
--- gets the list of previous games from modcontent.lua. games are sorted by date from oldest-newest by default
+-- gets the list of previous games from the current profile's modcontent.lua. games are sorted by date from oldest-newest by default
 local function fetchGameHistory()
-  return modApi:readModData("finishedGames")
+  return modApi:readProfileData("finishedGames") or {}
 end
 
 local function showGameStatsInRightPane(statsTable, rightPane)
@@ -158,7 +159,7 @@ local function showGameStatsInRightPane(statsTable, rightPane)
   end
 end
 
-local function showGameHistoryWindow()
+local function showGameHistoryWindow(games)
   sdlext.showDialog(function(ui, quit)
     local maxW = 0.8 * ScreenSizeX()
     local maxH = 0.8 * ScreenSizeY()
@@ -168,6 +169,16 @@ local function showGameHistoryWindow()
       compactW = true,
       compactH = true,
     })
+    frame:addTo(ui):pospx((ui.w - frame.w) / 2, (ui.h - frame.h) / 2 - 0.05 * ScreenSizeY())
+    if #games == 0 then -- there aren't any games in the list
+      Ui()
+        :decorate({          
+          DecoAlign((maxW / 2) - 160, -maxH / 2),
+          DecoText("No games available.", deco.uifont.title.font, deco.uifont.title.set)
+        })
+        :addTo(frame)
+      return
+    end
 
     local box = UiWeightLayout()
     :orientation(true) -- horizontal
@@ -192,8 +203,6 @@ local function showGameHistoryWindow()
       :width(1):height(1):vgap(3):anchorH("center")
       :addTo(leftPane.scroll)
 
-    local games = fetchGameHistory()
-    local squadPalettes = sdlext.squadPalettes()
     -- since games go from oldest-newest, lets loop through backwards so the first item in the list is the most recent game
     -- TODO: implement sorting by other stats, like score/kills/damage
     for i = #games, 1, -1 do
@@ -300,12 +309,11 @@ local function showGameHistoryWindow()
       end    
     end
     
-    frame:addTo(ui):pospx((ui.w - frame.w) / 2, (ui.h - frame.h) / 2 - 0.05 * ScreenSizeY())
   end)
 end
 
 sdlext.addModContent(
   "Extra Stats Browser",
-  function() showGameHistoryWindow() end,
+  function() showGameHistoryWindow(fetchGameHistory()) end,
   "View all previous games that have extra stats recorded."
 )
