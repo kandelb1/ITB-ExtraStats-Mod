@@ -11,6 +11,7 @@ local playerSelfDamageTable = {}
 local beamWeaponDamageTable = {}
 local lightningWeaponDamageTable = {}
 local bomblingDamageTable = {}
+local spiderlingDamageTable = {}
 local prevGridHealth = nil
 local skipFireStat = false
 local defeated = false
@@ -87,6 +88,7 @@ local function initializeStatsTable()
 
   -- arachnophiles
   stats["spidersCreated"] = 0
+  stats["spiderDamage"] = 0
 
   -- heat sinkers
   stats["boosts"] = 0 -- incomplete, waiting for the next version of modapiext for the pawnIsBoosted hook
@@ -290,6 +292,12 @@ modapiext.events.onPawnDamaged:subscribe(function(mission, pawn, damageTaken)
     bomblingDamageTable[pawn:GetId()] = nil
   end
 
+  if spiderlingDamageTable[pawn:GetId()] then
+    logStatIncrement(damageTaken, "spiderDamage")
+    statsTable["spiderDamage"] = statsTable["spiderDamage"] + damageTaken
+    spiderlingDamageTable[pawn:GetId()] = nil
+  end
+
 end)
 
 modapiext.events.onPawnHealed:subscribe(function(mission, pawn, healingTaken)
@@ -394,6 +402,10 @@ local function checkEventForStats(pawn, weaponId, event)
 
         if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "DeployUnit_SelfDamage") and pawn:GetId() ~= targetPawn:GetId() then
           bomblingDamageTable[targetPawn:GetId()] = true
+        end
+
+        if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "DeployUnit_AracnoidAtk") and pawn:GetId() ~= targetPawn:GetId() then
+          spiderlingDamageTable[targetPawn:GetId()] = true
         end
 
         if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Ranged_Arachnoid") and event.bKO_Effect then

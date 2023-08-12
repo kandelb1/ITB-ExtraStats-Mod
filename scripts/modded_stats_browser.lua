@@ -52,8 +52,8 @@ local squadSpecificLabels = {
   },
   -- arachnophiles
   [11] = {
-    ["spidersCreated"] = "Spiders Created",
-    -- ["spiderDamage"] = "Spider Damage (WIP)"
+    ["spidersCreated"] = "Spiderlings Created",
+    ["spiderDamage"] = "Spiderling Damage"
   },
   -- mist eaters
   [12] = {
