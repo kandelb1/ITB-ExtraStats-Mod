@@ -500,7 +500,15 @@ modApi.events.onFrameDrawn:subscribe(function()
   if not Game then return end
   if defeated then return end
 
-  if Game:GetPower():GetValue() <= 0 then
+  local currentGridHealth = Game:GetPower():GetValue()
+  if currentGridHealth <= 0 then
+    -- we normally check for grid damage in onMissionUpdate(), but that event stops firing when you lose the game.
+    -- we need to check here if grid health changed so we can correctly record the last bit of grid damage
+    if currentGridHealth ~= prevGridHealth then
+      local damageTaken = prevGridHealth - currentGridHealth
+      logStatIncrement(damageTaken, "gridDamage")
+      statsTable["gridDamage"] = statsTable["gridDamage"] + damageTaken
+    end
     defeated = true
     local gameId = uuid()
     local difficulty = GetDifficulty()
