@@ -7,7 +7,6 @@ local MEDAL_SMALL = {W = 25, H = 34}
 local MEDAL_SURFACES = {[2] = sdlext.getSurface({path = "img/ui/hangar/victory_2.png"}),
                         [3] = sdlext.getSurface({path = "img/ui/hangar/victory_3.png"}),
                         [4] = sdlext.getSurface({path = "img/ui/hangar/victory_4.png"})}
-local PILOT_PORTRAIT_SIZE = {W = 61, H = 61}
 local defeatTextset = deco.textset(sdl.rgb(255, 0, 0), deco.colors.black, 2, false)
 local victoryTextset = deco.textset(sdl.rgb(0, 255, 0), deco.colors.black, 2, false)
 local selectedButton = nil
@@ -37,6 +36,15 @@ local function getPilotSurface(pilotId)
   return surface
 end
 
+local function getPilotDescription(pilotId)
+  local pilot = _G[pilotId]
+  local key = GetSkillInfo(pilot.Skill).desc
+  if not key or key == "" then
+    key = "Hangar_NoAbility"
+  end
+  return GetText(key)
+end
+
 local function getWeaponSurface(weaponId)
   if weaponId == "" then return nil end
   local weapon = _G[weaponId]
@@ -47,10 +55,17 @@ local function getWeaponSurface(weaponId)
   return surface
 end
 
+local function getWeaponKey(weaponId, key)
+  local textId = weaponId:match("^(.-)_?A?B?$") .. "_" .. key
+  if IsLocalizedText(textId) then return GetLocalizedText(textId) end
+  return _G[weaponId] and _G[weaponId][key] or "N/A"
+end
+
 local function getMechSurface(mechId, colorIndex)
   local mech = _G[mechId]
   local animData = ANIMS[mech.Image]
-  local surface = sdlext.getSurface({path = "img/" .. animData.Image})
+  local noShadowImage = animData.Image:sub(0, #animData.Image - 4) .. "_ns.png"
+  local surface = sdlext.getSurface({path = "img/" .. noShadowImage})
   if surface == nil then
     return sdlext.getSurface({path = "img/weapons/placeholder_mech.png"})
   end
@@ -67,49 +82,12 @@ end
 
 -- update the right side of the window with the loadout used, score, kills, etc.
 local function gameClicked(game, rightPane)
-  rightPane.loadout:detach()
-  rightPane.loadout = UiWeightLayout()
-    :width(1):height(0.5)
-    :orientation(false):vgap(10)
-    :padding(20)
-    :addTo(rightPane)
-
-  for i = 0, 2 do
-    local container = UiWeightLayout()
-      :width(1):heightpx(PILOT_PORTRAIT_SIZE.H + 5)
-      :hgap(10)
-      :addTo(rightPane.loadout)
-
-    local pilotKey = "pilot" .. i
-    local weaponIndices = {(i * 2) + 1, (i * 2) + 2}
-    local mechIndex = i + 1
-    local colorIndex = game["colors"][i+1] + 1
-
-    local mechSurface = getMechSurface(game["mechs"][mechIndex], colorIndex)
-    local pilotSurface = getPilotSurface(game[pilotKey]["id"])
-    local weapon1 = getWeaponSurface(game["weapons"][weaponIndices[1]])
-    local weapon2 = getWeaponSurface(game["weapons"][weaponIndices[2]])
-    local images = Ui()
-      :sizepx(PILOT_PORTRAIT_SIZE.W, PILOT_PORTRAIT_SIZE.H)
-      :decorate({        
-        DecoSurface(pilotSurface),
-        DecoAlign(5, 0),
-        DecoSurfaceOutlined(mechSurface),
-        DecoAlign(5, 0),
-        DecoSurface(weapon1),
-        DecoAlign(5, 0),
-        DecoSurface(weapon2),
-      })
-      :addTo(container)
-    images.ignoreMouse = true
-    
-  end
-
   rightPane.otherStats:detach()
   rightPane.otherStats = UiWeightLayout()
-    :width(1):height(0.5)
+    :width(1):height(0.2)
     :orientation(false):vgap(5)
     :addTo(rightPane)
+  rightPane.otherStats.padt = 10
 
   local kills = game["kills"]
   local score = game["score"]
@@ -163,6 +141,62 @@ local function gameClicked(game, rightPane)
     })
     :addTo(rightPane.otherStats)
 
+  rightPane.loadout:detach()
+  rightPane.loadout = UiWeightLayout()
+    :width(1):height(0.5)
+    :orientation(false):vgap(60)
+    :padding(20)
+    :addTo(rightPane)
+
+  for i = 0, 2 do
+    local container = UiWeightLayout()
+      :width(0.6):heightpx(25)
+      :hgap(1)
+      :decorate({
+        DecoFrame(deco.colors.tooltipbg, deco.colors.buttonborder)
+      })
+      :addTo(rightPane.loadout)
+
+    local pilotKey = "pilot" .. i
+    local weaponIndices = {(i * 2) + 1, (i * 2) + 2}
+    local mechIndex = i + 1
+    local colorIndex = game["colors"][i+1] + 1
+
+    local mechSurface = getMechSurface(game["mechs"][mechIndex], colorIndex)
+    local pilotSurface = getPilotSurface(game[pilotKey]["id"])
+    local weapon1Id = game["weapons"][weaponIndices[1]]
+    local weapon2Id = game["weapons"][weaponIndices[2]]
+    local weapon1Surface = getWeaponSurface(weapon1Id)
+    local weapon2Surface = getWeaponSurface(weapon2Id)
+    local pilot = Ui()
+      :width(0.2):height(1)
+      :decorate({
+        DecoSurface(pilotSurface)
+      })
+      :addTo(container)
+    pilot:settooltip(getPilotDescription(game[pilotKey]["id"]), game[pilotKey]["name"])
+    local mech = Ui()
+      :width(0.2):height(1)
+      :decorate({
+        DecoSurfaceOutlined(mechSurface)
+      })
+      :addTo(container)
+    mech.ignoreMouse = true
+    local wep1 = Ui()
+      :width(0.2):height(1)
+      :decorate({
+        DecoSurface(weapon1Surface)
+      })
+      :addTo(container)
+    wep1:settooltip(getWeaponKey(weapon1Id, "Description"), getWeaponKey(weapon1Id, "Name"))
+    local wep2 = Ui()
+      :width(0.2):height(1)
+      :decorate({
+        DecoSurface(weapon2Surface)
+      })
+      :addTo(container)
+    wep2:settooltip(getWeaponKey(weapon2Id, "Description"), getWeaponKey(weapon2Id, "Name"))
+  end
 end
 
 local function showStatsScreen(gameStats)
@@ -175,6 +209,16 @@ local function showStatsScreen(gameStats)
       compactW = true,
       compactH = true,
     })
+    frame:addTo(ui):pospx((ui.w - frame.w) / 2, (ui.h - frame.h) / 2 - 0.05 * ScreenSizeY())
+    if not gameStats["score0"] then -- there aren't any games in the list
+      Ui()
+        :decorate({          
+          DecoAlign((maxW / 2) - 160, -maxH / 2),
+          DecoText("No games available.", deco.uifont.title.font, deco.uifont.title.set)
+        })
+        :addTo(frame)
+      return
+    end
     
     local box = UiWeightLayout()
       :orientation(true) -- horizontal
@@ -198,14 +242,14 @@ local function showStatsScreen(gameStats)
       :width(0.66):height(1)
       :orientation(false):vgap(10)
       :addTo(box)
+    rightPane.otherStats = UiWeightLayout()
+      :width(1):height(0.2)
+      :orientation(false):vgap(5)
+      :padding(20)
+      :addTo(rightPane)
     rightPane.loadout = UiWeightLayout()
       :width(1):height(0.5)
       :orientation(false):vgap(10)
-      :addTo(rightPane)
-    rightPane.otherStats = UiWeightLayout()
-      :width(1):height(0.5)
-      :orientation(false):vgap(5)
-      :padding(20)
       :addTo(rightPane)
     
     local gameHistory = UiBoxLayout()    
@@ -322,8 +366,6 @@ local function showStatsScreen(gameStats)
       game = gameStats["score" .. i]
     end
     LOG("LOOP OVER")
-
-    frame:addTo(ui):pospx((ui.w - frame.w) / 2, (ui.h - frame.h) / 2 - 0.05 * ScreenSizeY())
   end)
 end
 
