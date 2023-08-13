@@ -55,7 +55,6 @@ local function initializeStatsTable()
   -- rusting hulks
   stats["tilesSmoked"] = 0
   stats["attacksCancelled"] = 0
-  stats["stormDamage"]= 0 -- incomplete
 
   -- blitzkrieg
   stats["lightningDamage"] = 0
@@ -65,7 +64,6 @@ local function initializeStatsTable()
   -- flame behemoths
   stats["unitsFired"] = 0
   stats["tilesFired"] = 0
-  stats["fireDamage"] = 0 -- incomplete
 
   -- frozen titans
   stats["unitsFrozen"] = 0
@@ -73,6 +71,7 @@ local function initializeStatsTable()
 
   -- hazardous mechs
   stats["leapDistance"] = 0
+  stats["acidApplied"] = 0
 
   -- bombermechs
   stats["bombsCreated"] = 0
@@ -80,6 +79,7 @@ local function initializeStatsTable()
 
   -- mist eaters
   stats["tilesSmoked"] = 0
+  stats["attacksCancelled"] = 0
 
   -- cataclysm
   stats["tilesCracked"] = 0
@@ -94,7 +94,6 @@ local function initializeStatsTable()
   stats["boosts"] = 0 -- incomplete, waiting for the next version of modapiext for the pawnIsBoosted hook
   stats["unitsFired"] = 0
   stats["tilesFired"] = 0
-  stats["fireDamage"] = 0 -- incomplete
 
   -- secret squad
   stats["ramDistance"] = 0
@@ -176,7 +175,6 @@ modApi.events.onPreStartGame:subscribe(function()
 end)
 
 modApi.events.onPostStartGame:subscribe(function()
-  LOG("Setting squad to " .. GAME.additionalSquadData.squadIndex)
   statsTable["squadIndex"] = GAME.additionalSquadData.squadIndex
 end)
 
@@ -249,6 +247,14 @@ end)
 --     statsTable["boosts"] = statsTable["boosts"] + 1  
 --   end  
 -- end)
+
+modapiext.events.onPawnIsAcid:subscribe(function(mission, pawn, isAcid)
+  if IsTestMechScenario() then return end
+  if isAcid and pawn:IsEnemy() then
+    logStatIncrement(1, "acidApplied")
+    statsTable["acidApplied"] = statsTable["acidApplied"] + 1
+  end
+end)
 
 modapiext.events.onPawnDamaged:subscribe(function(mission, pawn, damageTaken)
   if IsTestMechScenario() then return end

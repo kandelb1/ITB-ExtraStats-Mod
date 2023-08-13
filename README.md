@@ -26,7 +26,7 @@ Extra Stats currently records the following stats, separated into two categories
 - Kills
 - Damage Dealt *(damage dealt to enemies)*
 - Damage Taken *(damage taken from enemies)*
-- Self Damage  *(damage dealt by friendly units to other friendly units)*
+- Self Damage  *(damage dealt by friendly units to friendly units)*
 - Healing
 - Grid Damage
 - Grid Resists
@@ -40,7 +40,6 @@ Extra Stats currently records the following stats, separated into two categories
 - **Rusting Hulks**
 - - Tiles Smoked *(smoke placed on tiles)*
 - - Attacks Cancelled *(enemy attacks cancelled with smoke)*
-- - **(WIP)** Storm Damage *(damage done with electric storm passive)*
 - **Zenith Guard**
 - - Shields *(shields placed on friendly units/buildings)*
 - - Beam Damage *(damage done with laserbeam weapon, friend or foe)*
@@ -54,26 +53,27 @@ Extra Stats currently records the following stats, separated into two categories
 - **Flame Behemoths**
 - - Tiles Fired *(tiles set on fire)*
 - - Units Fired *(units set on fire, friend or foe)*
-- - **(WIP)** Fire Damage *(damage done with fire)*
 - **Frozen Titans**
 - - Units Frozen *(units frozen, friend or foe)*
 - - Damage Blocked With Ice *(damage done to frozen units or buildings)*
 - **Hazardous Mechs**
 - - Leap Distance *(distance traveled with leaping mech weapon)*
+- - Acid Applied *(enemy units afflicted with acid)*
 - **Secret Squad**
 - - Ram Distance *(distance traveled with beetle mech weapon)*
 - **Bombermechs**
 - - Bomblings Created
 - - Bombling Damage *(damage done with bomblings, friend or foe)*
 - **Arachnophiles**
-- - Spiders Created
+- - Spiderlings Created
+- - Spiderling Damage *(damage done with spiderlings, friend or foe)*
 - **Mist Eaters**
 - - Tiles Smoked *(smoke placed on tiles)*
+- - Attacks Cancelled *(enemy attacks cancelled with smoke)*
 - **Heat Sinkers**
 - - **(WIP)** Boosts *(friendly units boosted)*
 - - Units Fired *(units set on fire, friend or foe)*
 - - Tiles Fired *(tiles set on fire)*
-- - **(WIP)** Fire Damage *(damage done with fire)*
 - **Cataclysm**
 - - Tiles Cracked *(tiles cracked with drill mech)*
 - - Tiles Destroyed *(cracked tiles turned into holes)*

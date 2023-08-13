@@ -8,7 +8,6 @@ local squadSpecificLabels = {
   [2] = {
     ["tilesSmoked"] = "Tiles Smoked",
     ["attacksCancelled"] = "Attacks Cancelled",
-    ["stormDamage"] = "Storm Damage (WIP)",
   },
   -- zenith guard
   [3] = {
@@ -30,7 +29,6 @@ local squadSpecificLabels = {
   [6] = {
     ["tilesFired"] = "Tiles Set on Fire",
     ["unitsFired"] = "Units Set on Fire",
-    ["fireDamage"] = "Fire Damage (WIP)",
   },
   -- frozen titans
   [7] = {
@@ -39,7 +37,8 @@ local squadSpecificLabels = {
   },
   -- hazardous mechs
   [8] = {
-    ["leapDistance"] = "Distance Traveled With Leap"
+    ["leapDistance"] = "Distance Traveled With Leap",
+    ["acidApplied"] = "Acid Applied to Vek"
   },
   -- secret squad
   [9] = {
@@ -57,14 +56,14 @@ local squadSpecificLabels = {
   },
   -- mist eaters
   [12] = {
-    ["tilesSmoked"] = "Tiles Smoked"
+    ["tilesSmoked"] = "Tiles Smoked",
+    ["attacksCancelled"] = "Attacks Cancelled",
   },
   -- heat sinkers
   [13] = {
     ["boosts"] = "Mech Boosts (WIP)",
     ["unitsFired"] = "Units Set on Fire",
     ["tilesFired"] = "Tiles Set on Fire",
-    ["fireDamage"] = "Fire Damage (WIP)",
   },
   -- cataclysm
   [14] = {
@@ -211,7 +210,6 @@ local function showGameHistoryWindow(games)
       local path = modApi.squad_icon[squadIndex]
       local surface
       if path ~= nil then
-        -- LOG(path)
         surface = sdlext.getSurface({path = path})
         if squadIndex > 1 and squadIndex <= modApi.constants.VANILLA_SQUADS then
           local colorTable = {}

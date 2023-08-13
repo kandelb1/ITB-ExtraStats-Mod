@@ -365,7 +365,6 @@ local function showStatsScreen(gameStats)
       i = i + 1
       game = gameStats["score" .. i]
     end
-    LOG("LOOP OVER")
   end)
 end
 
