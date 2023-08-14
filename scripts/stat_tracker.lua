@@ -364,7 +364,8 @@ local function checkEventForStats(pawn, weaponId, event)
     if event.iCrack == EFFECT_CREATE then
       local terrain = Board:GetTerrain(event.loc)
       -- IsCrackable() returns true for mountains and ice tiles, but it's the wrong kind of cracking, so we need to do some more checks
-      if pawn:IsPlayer() and Board:IsCrackable(event.loc) and terrain ~= TERRAIN_ICE and terrain ~= TERRAIN_MOUNTAIN then
+      if pawn:IsPlayer() and Board:IsCrackable(event.loc) and terrain ~= TERRAIN_ICE and terrain ~= TERRAIN_MOUNTAIN
+      and not Board:IsCracked(event.loc) then
         logStatIncrement(1, "tilesCracked")
         statsTable["tilesCracked"] = statsTable["tilesCracked"] + 1
       end
