@@ -522,6 +522,30 @@ modApi.events.onFrameDrawn:subscribe(function()
     LOG("GAME OVER, difficulty is " .. difficulty .. " and we secured " .. statsTable["islandsSecured"] .. " islands")
     saveFinishedGameStats(gameId, false, difficulty, statsTable["islandsSecured"], time)
   end
+
+  local mission = GetCurrentMission()
+  if Board and mission then
+    local missionId = mission["ID"]
+    if modApi:stringStartsWith(missionId, "Mission_Final") then -- the final mission has two phases, "Mission_Final" and "Mission_Final_Cave"
+      local playerPawns = Board:GetPawns(TEAM_PLAYER)
+      local deadCount = 0
+      for i = 1, playerPawns:size() do
+        local pawn = Board:GetPawn(playerPawns:index(i))
+        if pawn:IsMech() and pawn:IsDead() then
+          deadCount = deadCount + 1
+        end
+      end
+      if deadCount == 3 then
+        defeated = true
+        local gameId = uuid()
+        local difficulty = GetDifficulty()
+        local time = os.time()
+        LOG("GAME OVER, difficulty is " .. difficulty .. " and we secured " .. statsTable["islandsSecured"] .. " islands")
+        saveFinishedGameStats(gameId, false, difficulty, statsTable["islandsSecured"], time)
+      end 
+    end
+  end
+
 end)
 
 modapiext.events.onSkillStart:subscribe(handleSkillStart)
