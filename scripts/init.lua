@@ -25,7 +25,7 @@ end
 return {
   id = "extra_stats",
   name = "Extra Stats",
-  version = "0.1",
+  version = "1.0.0",
   modApiVersion = "2.9.2",
   gameVersion = "1.2.88",
   dependencies = {
