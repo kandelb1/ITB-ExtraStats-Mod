@@ -1,26 +1,20 @@
 # ITB Extra Stats
 
-Record extra stats for your runs and view all previous runs with the Extra Stats Browser.
+Record extra stats for your runs and view all previous runs with the *Extra Stats Browser.*
 
-Also adds an additional Vanilla Stats Browser.
-
-
+Also adds an additional *Vanilla Stats Browser.*
 
 ## Features
 
-Extra Stats adds two new buttons to the Mod Content menu:
+*Extra Stats* adds two new buttons to the Mod Content menu:
 
 <img src="repository-resources/new_buttons.png" height="350" />
 
-### Vanilla Stats Browser
-
-Ever been disappointed that ITB will only show you the top 5 scores for each of your squads? Now you can view ALL of your previous runs.
-<img src="repository-resources/vanilla_stats_browser.png" />
-Scroll through all of your past runs, sorted by score. Click on a game in the list to see your loadout and stats. Mouse over pilots and weapons to see their names and descriptions.
-
 ### Extra Stats & Extra Stats Browser
 
-Extra Stats currently records the following stats, separated into two categories:
+Have you ever wanted to know how many tiles you cracked when playing Cataclysm, how many enemy attacks you cancelled when playing Rusting Hulks, or how much damage you did with your bomblings when playing Bombermechs? Now you can see all of those stats and more!
+
+*Extra Stats* records the following stats for each of your runs, separated into two categories:
 
 #### GENERAL STATS
 - Kills
@@ -79,10 +73,16 @@ Extra Stats currently records the following stats, separated into two categories
 - - Tiles Destroyed *(cracked tiles turned into holes)*
 - - Vek Pitted *(vek killed via falling into hole)*
 
-Whenever you lose or win a run, extra stats will save your stats to be viewed back at a later time via the *Extra Stats Browser*.
+Whenever you lose or win a run, *Extra Stats* will save your stats to be viewed back at a later time via the *Extra Stats Browser*. Stats will **NOT** be recorded when you abandon a run.
 <img src="repository-resources/extra_stats_browser.png" />
-Scroll through the list and click on a game to view your extra stats.
+Scroll through the list and click on a game to view your stats!
 
+
+### Vanilla Stats Browser
+
+Ever been disappointed that ITB will only show you the top 5 scores for each of your squads? Now you can view ALL of your previous runs.
+<img src="repository-resources/vanilla_stats_browser.png" />
+Scroll through all of your past runs, sorted by score. Click on a game in the list to see your loadout and stats. Mouse over pilots and weapons to see their names and descriptions.
 
 ## Installation
 
