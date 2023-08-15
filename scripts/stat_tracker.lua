@@ -5,6 +5,7 @@ local function logStatIncrement(value, statsTableKey)
 end
 
 local statsTable = {}
+local undoMoveStatsTable = nil
 
 local vekSelfDamageTable = {}
 local playerSelfDamageTable = {}
@@ -492,6 +493,11 @@ local function handleSkillStart(mission, pawn, weaponId, p1, p2)
     logStatIncrement(1, "bombsCreated")
     statsTable["bombsCreated"] = statsTable["bombsCreated"] + 1
   end
+
+  if pawn:IsPlayer() and weaponId == "Move" then
+    undoMoveStatsTable = copy_table(statsTable)
+  end
+
 end
 
 local function handle2ClickSkillStart(mission, pawn, weaponId, p1, p2, p3)
@@ -500,6 +506,13 @@ local function handle2ClickSkillStart(mission, pawn, weaponId, p1, p2, p3)
   if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Ranged_DeployBomb") then
     logStatIncrement(2, "bombsCreated")
     statsTable["bombsCreated"] = statsTable["bombsCreated"] + 2
+  end
+end
+
+local function handleUndoMove(mission, pawn, undonePosition)
+  if undoMoveStatsTable and pawn:IsPlayer() then
+    statsTable = undoMoveStatsTable
+    undoMoveStatsTable = nil
   end
 end
 
@@ -552,6 +565,7 @@ end)
 modapiext.events.onSkillStart:subscribe(handleSkillStart)
 modapiext.events.onQueuedSkillStart:subscribe(handleSkillStart)
 modapiext.events.onFinalEffectStart:subscribe(handle2ClickSkillStart)
+modapiext.events.onPawnUndoMove:subscribe(handleUndoMove)
 
 modApi.events.onMainMenuEntered:subscribe(function()
   statsTable = nil
