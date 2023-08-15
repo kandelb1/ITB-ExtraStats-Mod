@@ -14,6 +14,7 @@ local selectedButton = nil
 
 local function fetchGameHistory()
   local path = GetSavedataLocation() .. "profile_" .. Settings.last_profile .. "/profile.lua"
+  if not modApi:fileExists(path) then return {} end
   local stats = modApi:loadIntoEnv(path).Profile.stat_tracker
   return stats
 end
