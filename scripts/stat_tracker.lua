@@ -5,6 +5,8 @@ local function logStatIncrement(value, statsTableKey)
 end
 
 local statsTable = {}
+local undoMoveStatsTable = nil
+local undoWasUsed = false
 
 local vekSelfDamageTable = {}
 local playerSelfDamageTable = {}
@@ -168,9 +170,10 @@ modApi.events.onMissionUpdate:subscribe(function()
 
 end)
 
-modApi.events.onPreStartGame:subscribe(function() 
-  -- starting new game, so get new stats and write them to the file
+modApi.events.onPreStartGame:subscribe(function()
   statsTable = initializeStatsTable()
+  undoWasUsed = false
+  undoMoveStatsTable = nil
   saveStats()
 end)
 
@@ -182,11 +185,13 @@ end)
 -- interestingly, if you go back to the main menu and then click 'continue', it won't fire
 modapiext.events.onGameLoaded:subscribe(function(mission)
   statsTable = loadCurrentStats()
+  undoWasUsed = false
   prevGridHealth = Game:GetPower():GetValue()
 end)
 
 modApi.events.onContinueClicked:subscribe(function() 
   statsTable = loadCurrentStats()
+  undoWasUsed = false
 end)
 
 -- this is fired a LOT
@@ -258,6 +263,10 @@ end)
 
 modapiext.events.onPawnDamaged:subscribe(function(mission, pawn, damageTaken)
   if IsTestMechScenario() then return end
+  if pawn:IsPlayer() and undoWasUsed then
+    undoWasUsed = false
+    return
+  end
   if pawn:IsEnemy() then
     logStatIncrement(damageTaken, "damageDealt")
     statsTable["damageDealt"] = statsTable["damageDealt"] + damageTaken
@@ -308,6 +317,10 @@ end)
 
 modapiext.events.onPawnHealed:subscribe(function(mission, pawn, healingTaken)
   if IsTestMechScenario() then return end
+  if pawn:IsPlayer() and undoWasUsed then
+    undoWasUsed = false
+    return
+  end
   if pawn:IsPlayer() then
     logStatIncrement(healingTaken, "healing")
     statsTable["healing"] = statsTable["healing"] + healingTaken
@@ -441,6 +454,10 @@ local function handleSkillStart(mission, pawn, weaponId, p1, p2)
   -- LOG("handleSkillStart: " .. pawn:GetMechName() .. " is using weaponId " .. weaponId)
   local fx = _G[weaponId]:GetSkillEffect(p1, p2)
   if modapiext.weapon:isTipImage() or IsTestMechScenario() then return end -- don't record stats when playing animated tooltips or in the testing scenario
+  if pawn:IsPlayer() then
+    undoWasUsed = false
+    if weaponId == "Move" then undoMoveStatsTable = copy_table(statsTable) end
+  end
   
   -- loop through effects, which are typically player attacks
   for eventIndex = 1, fx.effect:size() do
@@ -492,6 +509,7 @@ local function handleSkillStart(mission, pawn, weaponId, p1, p2)
     logStatIncrement(1, "bombsCreated")
     statsTable["bombsCreated"] = statsTable["bombsCreated"] + 1
   end
+
 end
 
 local function handle2ClickSkillStart(mission, pawn, weaponId, p1, p2, p3)
@@ -500,6 +518,14 @@ local function handle2ClickSkillStart(mission, pawn, weaponId, p1, p2, p3)
   if pawn:IsPlayer() and modApi:stringStartsWith(weaponId, "Ranged_DeployBomb") then
     logStatIncrement(2, "bombsCreated")
     statsTable["bombsCreated"] = statsTable["bombsCreated"] + 2
+  end
+end
+
+local function handleUndoMove(mission, pawn, undonePosition)
+  undoWasUsed = true
+  if undoMoveStatsTable and pawn:IsPlayer() then
+    statsTable = undoMoveStatsTable
+    undoMoveStatsTable = nil
   end
 end
 
@@ -552,8 +578,11 @@ end)
 modapiext.events.onSkillStart:subscribe(handleSkillStart)
 modapiext.events.onQueuedSkillStart:subscribe(handleSkillStart)
 modapiext.events.onFinalEffectStart:subscribe(handle2ClickSkillStart)
+modapiext.events.onPawnUndoMove:subscribe(handleUndoMove)
 
 modApi.events.onMainMenuEntered:subscribe(function()
   statsTable = nil
+  undoMoveStatsTable = nil
+  undoWasUsed = false
   defeated = false
 end)
