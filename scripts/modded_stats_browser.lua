@@ -125,7 +125,7 @@ local function showGameStatsInRightPane(statsTable, rightPane)
   Ui()
     :width(1):heightpx(15)
     :decorate({
-      DecoText("GENERAL STATS")
+      DecoText("GENERAL STATS", deco.fonts.tooltipTitle, deco.uifont.title.set)
     })
   :addTo(rightPane.statsBox.generalStats)
   rightPane.statsBox.specificStats = UiWeightLayout()
@@ -136,7 +136,7 @@ local function showGameStatsInRightPane(statsTable, rightPane)
   Ui()
     :width(1):heightpx(15)
     :decorate({
-      DecoText("SQUAD-SPECIFIC STATS")
+      DecoText("SQUAD-SPECIFIC STATS", deco.fonts.tooltipTitle, deco.uifont.title.set)
     })
   :addTo(rightPane.statsBox.specificStats)
   
@@ -199,7 +199,7 @@ local function showGameHistoryWindow(games)
       :vgap(10)
 
     local gameHistory = UiBoxLayout()
-      :width(1):height(1):vgap(3):anchorH("center")
+      :width(1):height(1):vgap(3)
       :addTo(leftPane.scroll)
 
     -- since games go from oldest-newest, lets loop through backwards so the first item in the list is the most recent game
@@ -223,16 +223,15 @@ local function showGameHistoryWindow(games)
       if surface == nil then
         surface = sdlext.getSurface({path = "img/units/placeholder_mech.png"})
       end
-      local bgColor
-      if game.victory then
+      local bgColor = deco.colors.tooltipbg
+      if game["victory"] then
         bgColor = deco.colors.buttonhlcolor
-      else
-        bgColor = deco.colors.tooltipbg
       end
+
       local buttonBox = UiWeightLayout()
-      :width(1):heightpx(100):hgap(1)
+      :width(1):heightpx(100):hgap(0)
       :decorate({
-        DecoFrame(bgColor, sdl.rgba(0, 0, 0, 0), nil),
+        DecoFrame(bgColor, sdl.rgba(0, 0, 0, 0), 2),
         DecoButton(),
       })
       :addTo(gameHistory)
@@ -247,22 +246,21 @@ local function showGameHistoryWindow(games)
       end
 
       local left = UiWeightLayout()
-      :width(0.4)
-      :height(1)
-      :decorate({
-        -- DecoFrame(bgColor, deco.colors.debugYellow, 2),
-        -- DecoText("#" .. i + 1),
-        DecoSurfaceOutlined(surface),
-      })
-      :addTo(buttonBox)
-      left.ignoreMouse = true
+        :width(0.4)
+        :height(1)
+        :decorate({
+          DecoFrame(bgColor, sdl.rgba(0, 0, 0, 0), nil),
+          DecoSurfaceOutlined(surface),
+        })
+        :addTo(buttonBox)
+        left.ignoreMouse = true
 
       local right = UiWeightLayout()
         :width(0.6)
         :height(1)
         :orientation(false):vgap(1)
         :decorate({
-          -- DecoFrame(bgColor, deco.colors.debugRed, 2),
+          DecoFrame(bgColor, sdl.rgba(0, 0, 0, 0), nil),
         })
         :addTo(buttonBox)
       right.ignoreMouse = true
@@ -272,8 +270,6 @@ local function showGameHistoryWindow(games)
       Ui()
         :width(1):heightpx(15)
         :decorate({
-          -- DecoFrame(bgColor, deco.colors.debugRed, 2),
-          -- DecoCAlign(),
           DecoText(dateText)
         })
         :addTo(right)
@@ -287,8 +283,6 @@ local function showGameHistoryWindow(games)
       Ui()
         :width(0.5):heightpx(15)
         :decorate({
-          -- DecoFrame(bgColor, deco.colors.debugGreen, 2),
-          -- DecoAlign(0, 0),
           DecoCAlign(),
           DecoText(victoryText, nil, textset)
         })
